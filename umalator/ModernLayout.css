@@ -4,7 +4,6 @@
     flex-direction: column;
     gap: 20px;
     padding: 20px;
-    /* Allow container to grow beyond 1200px to accommodate side-by-side track and uma */
     max-width: 1900px; 
     margin: 0 auto;
     color: var(--text-primary);
@@ -39,23 +38,85 @@
 }
 
 .glass-panel.track-panel {
-    flex: 0 0 auto;
-    width: 960px;
-    max-width: 100%;
+    flex: 1 1 960px; /* Grow, shrink, ideal width 960 */
+    min-width: 0; /* Allow shrinking below content size */
     overflow-x: auto;
 }
 
 .glass-panel.uma-panel {
-    flex: 0 0 auto;
-    width: 700px;
-    max-width: 100%;
+    flex: 1 1 700px; /* Grow, shrink, ideal width 700 */
+    min-width: 0;
 }
 
-/* Controls Panel - typically below track/uma or side if space permits in future iterations */
+/* Controls Panel */
 .glass-panel.controls-panel {
     width: 100%;
     max-width: 1200px;
     align-self: center;
+}
+
+/* Fix: RaceTrack Responsiveness */
+.modern-layout-container .racetrackWrapper {
+    width: 100% !important;
+}
+
+.modern-layout-container .racetrackView {
+    width: 100% !important;
+    height: auto !important;
+}
+
+/* Fix: HorseDef Responsiveness */
+.modern-layout-container .horseDef {
+    background: transparent !important;
+    border: none !important;
+    width: 100% !important;
+    box-shadow: none !important;
+}
+
+.modern-layout-container .horseParams {
+    width: 100% !important;
+    max-width: 650px; /* Keep max-width for layout sanity */
+    margin: 10px auto !important;
+    /* Use flex/grid to adapt */
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important; 
+}
+
+.modern-layout-container .horseSkillHeader {
+    width: 100% !important;
+    max-width: 680px;
+}
+
+.modern-layout-container .horseSkillList {
+    width: 100% !important;
+    max-width: 576px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+}
+
+/* Fix: Oversized Buttons (TimeOfDay, Weather, etc) */
+.modern-layout-container .track-conditions img {
+    height: 2em;
+    width: auto;
+    margin-right: 5px;
+    cursor: pointer;
+    transition: filter 0.2s;
+}
+
+.modern-layout-container .track-conditions img:not(.selected) {
+    filter: grayscale(0.9);
+    opacity: 0.7;
+}
+
+.modern-layout-container .track-conditions img:hover {
+    opacity: 1;
+}
+
+/* Ensure track conditions flex properly */
+.track-conditions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    align-items: center;
 }
 
 /* Controls Grid */
@@ -193,18 +254,21 @@
 @media (max-width: 900px) {
     .modern-layout-container {
         padding: 10px;
-        /* Reset max-width for mobile to avoid horizontal scrolling issues */
         max-width: 100vw;
     }
     
     .glass-panel {
         padding: 15px;
-        width: 100% !important; /* Force full width on mobile */
+        width: 100% !important;
     }
     
-    /* Allow horizontal scroll for track */
     .track-panel {
         overflow-x: auto;
+        flex-basis: auto;
+    }
+    
+    .uma-panel {
+        flex-basis: auto;
     }
     
     .controls-grid {
@@ -302,13 +366,6 @@
 }
 
 /* Overrides for existing components */
-.modern-layout-container .horseDef {
-    background: transparent !important;
-    border: none !important;
-    width: 100% !important;
-    box-shadow: none !important;
-}
-
 .modern-layout-container .horseDefHeader {
     border-radius: 15px !important;
     margin-bottom: 15px;
@@ -317,7 +374,6 @@
 .modern-layout-container .horseParams {
     background: rgba(255,255,255,0.5) !important;
     border: 1px solid rgba(0,0,0,0.1) !important;
-    width: 100% !important;
     border-radius: 12px !important;
 }
 
@@ -328,10 +384,9 @@
 
 /* --- Dark Mode Color Fixes for Legacy Components --- */
 
-/* Force light text color in dark mode for components that might inherit bad colors */
 .dark .modern-layout-container .racetrackName {
     color: var(--text-primary) !important;
-    -webkit-text-stroke: 0px !important; /* Remove stroke if it makes text look weird */
+    -webkit-text-stroke: 0px !important;
     text-shadow: none !important;
 }
 
@@ -387,7 +442,6 @@
     border-color: rgba(255,255,255,0.1) !important;
 }
 
-/* Fix for RaceTrack text in dark mode */
 .dark text {
     fill: #e0e0e0;
 }
