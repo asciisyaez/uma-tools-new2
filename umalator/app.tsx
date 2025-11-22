@@ -27,6 +27,7 @@ import { IntroText } from './IntroText';
 import skilldata from '../uma-skill-tools/data/skill_data.json';
 import skillnames from '../uma-skill-tools/data/skillnames.json';
 import skill_meta from '../skill_meta.json';
+import championsMeetings from './champions_meetings.json';
 
 
 
@@ -49,36 +50,119 @@ class RaceParams extends Record({
 	season: Season.Spring,
 	time: Time.Midday,
 	grade: Grade.G1
-}) {}
+}) { }
 
 const enum EventType { CM, LOH }
 
-const presets = (CC_GLOBAL ? [
-	{type: EventType.CM, date: '2025-10', courseId: 10602, season: Season.Summer, ground: GroundCondition.Good, weather: Weather.Sunny, time: Time.Midday},
-	{type: EventType.CM, date: '2025-09', courseId: 10811, season: Season.Spring, ground: GroundCondition.Good, weather: Weather.Sunny, time: Time.Midday},
-	{type: EventType.CM, date: '2025-08', courseId: 10606, season: Season.Spring, ground: GroundCondition.Good, weather: Weather.Sunny, time: Time.Midday}
-] : [
-	{type: EventType.LOH, date: '2025-11', courseId: 11502, season: Season.Autumn, time: Time.Midday},
-	{type: EventType.CM, date: '2025-10', courseId: 10302, season: Season.Autumn, ground: GroundCondition.Good, weather: Weather.Cloudy, time: Time.Midday},
-	{type: EventType.CM, date: '2025-09-22', courseId: 10807, season: Season.Autumn, ground: GroundCondition.Good, weather: Weather.Sunny, time: Time.Midday},
-	{type: EventType.LOH, date: '2025-08', courseId: 10105, season: Season.Summer, Time: Time.Midday},
-	{type: EventType.CM, date: '2025-07-25', courseId: 10906, ground: GroundCondition.Yielding, weather: Weather.Cloudy, season: Season.Summer, time: Time.Midday},
-	{type: EventType.CM, date: '2025-06-21', courseId: 10606, ground: GroundCondition.Good, weather: Weather.Sunny, season: Season.Spring, time: Time.Midday}
-])
-	.map(def => ({
-		type: def.type,
-		date: new Date(def.date),
+const EVENT_TYPE_LOOKUP = {
+	CM: EventType.CM,
+	LOH: EventType.LOH
+} as const;
+
+const SEASON_LOOKUP = {
+	Spring: Season.Spring,
+	Summer: Season.Summer,
+	Autumn: Season.Autumn,
+	Winter: Season.Winter,
+	Sakura: Season.Sakura
+} as const;
+
+const GROUND_LOOKUP = {
+	Firm: GroundCondition.Good,
+	Good: GroundCondition.Good,
+	Yielding: GroundCondition.Yielding,
+	Soft: GroundCondition.Soft,
+	Heavy: GroundCondition.Heavy
+} as const;
+
+const WEATHER_LOOKUP = {
+	Sunny: Weather.Sunny,
+	Cloudy: Weather.Cloudy,
+	Rainy: Weather.Rainy,
+	Snowy: Weather.Snowy
+} as const;
+
+const TIME_LOOKUP = {
+	Morning: Time.Morning,
+	Midday: Time.Midday,
+	Evening: Time.Evening,
+	Night: Time.Night
+} as const;
+
+const CHAMPIONS_MEETING_ORDER = [
+	'Taurus Cup',
+	'Gemini Cup',
+	'Cancer Cup',
+	'Leo Cup',
+	'Virgo Cup',
+	'Libra Cup',
+	'Scorpio Cup',
+	'Sagittarius Cup',
+	'Capricorn Cup',
+	'Aquarius Cup',
+	'Pisces Cup',
+	'Aries Cup'
+] as const;
+const CHAMPIONS_MEETING_LABELS = new Map(CHAMPIONS_MEETING_ORDER.map((name, idx) => [name, idx + 1]));
+
+type ChampionMeetingRecord = {
+	type: keyof typeof EVENT_TYPE_LOOKUP
+	name?: string
+	date: string
+	courseId: number
+	season: keyof typeof SEASON_LOOKUP
+	ground: keyof typeof GROUND_LOOKUP
+	weather: keyof typeof WEATHER_LOOKUP
+	time: keyof typeof TIME_LOOKUP
+};
+
+function buildGlobalPresetRecords(records: ChampionMeetingRecord[]) {
+	return records.map(def => ({
+		type: EVENT_TYPE_LOOKUP[def.type] ?? EventType.CM,
+		name: def.name,
+		date: def.date,
 		courseId: def.courseId,
-		racedef: new RaceParams({
-			mood: 2 as Mood,
-			ground: def.type == EventType.CM ? def.ground : GroundCondition.Good,
-			weather: def.type == EventType.CM ? def.weather : Weather.Sunny,
-			season: def.season,
-			time: def.time,
-			grade: Grade.G1
-		})
-	}))
-	.sort((a,b) => +b.date - +a.date);
+		season: SEASON_LOOKUP[def.season] ?? Season.Spring,
+		ground: GROUND_LOOKUP[def.ground] ?? GroundCondition.Good,
+		weather: WEATHER_LOOKUP[def.weather] ?? Weather.Sunny,
+		time: TIME_LOOKUP[def.time] ?? Time.Midday
+	}));
+}
+
+const presetSources = (CC_GLOBAL ? buildGlobalPresetRecords(championsMeetings as ChampionMeetingRecord[]) : [
+	{ type: EventType.LOH, date: '2025-11', courseId: 11502, season: Season.Autumn, time: Time.Midday },
+	{ type: EventType.CM, date: '2025-10', courseId: 10302, season: Season.Autumn, ground: GroundCondition.Good, weather: Weather.Cloudy, time: Time.Midday },
+	{ type: EventType.CM, date: '2025-09-22', courseId: 10807, season: Season.Autumn, ground: GroundCondition.Good, weather: Weather.Sunny, time: Time.Midday },
+	{ type: EventType.LOH, date: '2025-08', courseId: 10105, season: Season.Summer, time: Time.Midday },
+	{ type: EventType.CM, date: '2025-07-25', courseId: 10906, ground: GroundCondition.Yielding, weather: Weather.Cloudy, season: Season.Summer, time: Time.Midday },
+	{ type: EventType.CM, date: '2025-06-21', courseId: 10606, ground: GroundCondition.Good, weather: Weather.Sunny, season: Season.Spring, time: Time.Midday }
+]);
+
+const presets = presetSources
+	.map(def => {
+		const cmIndex = def.type == EventType.CM && def.name ? CHAMPIONS_MEETING_LABELS.get(def.name) ?? null : null;
+		return {
+			type: def.type,
+			name: def.name,
+			cmIndex,
+			date: new Date(def.date),
+			courseId: def.courseId,
+			racedef: new RaceParams({
+				mood: 2 as Mood,
+				ground: def.type == EventType.CM ? def.ground : GroundCondition.Good,
+				weather: def.type == EventType.CM ? def.weather : Weather.Sunny,
+				season: def.season,
+				time: def.time,
+				grade: Grade.G1
+			})
+		};
+	})
+	.sort((a, b) => {
+		const aIdx = a.cmIndex ?? Number.POSITIVE_INFINITY;
+		const bIdx = b.cmIndex ?? Number.POSITIVE_INFINITY;
+		if (aIdx !== bIdx) return aIdx - bIdx;
+		return +a.date - +b.date;
+	});
 
 const DEFAULT_PRESET = presets[Math.max(presets.findIndex((now => p => new Date(p.date.getFullYear(), p.date.getUTCMonth() + 1, 0) < now)(new Date())) - 1, 0)];
 const DEFAULT_COURSE_ID = DEFAULT_PRESET.courseId;
@@ -118,9 +202,9 @@ function TimeOfDaySelect(props) {
 	// + 2 because for some reason the icons are 00-02 (noon/evening/night) but the enum values are 1-4 (morning(?) noon evening night)
 	return (
 		<div class="timeofdaySelect" onClick={click}>
-			{Array(3).fill(0).map((_,i) =>
-				<img src={`/uma-tools/icons/utx_ico_timezone_0${i}.png`} title={SKILL_STRINGS_en.skilldetails.time[i+2]}
-					class={i+2 == props.value ? 'selected' : ''} data-timeofday={i+2} />)}
+			{Array(3).fill(0).map((_, i) =>
+				<img src={`/uma-tools/icons/utx_ico_timezone_0${i}.png`} title={SKILL_STRINGS_en.skilldetails.time[i + 2]}
+					class={i + 2 == props.value ? 'selected' : ''} data-timeofday={i + 2} />)}
 		</div>
 	);
 }
@@ -154,9 +238,9 @@ function WeatherSelect(props) {
 	}
 	return (
 		<div class="weatherSelect" onClick={click}>
-			{Array(4).fill(0).map((_,i) =>
-				<img src={`/uma-tools/icons/utx_ico_weather_0${i}.png`} title={SKILL_STRINGS_en.skilldetails.weather[i+1]}
-					class={i+1 == props.value ? 'selected' : ''} data-weather={i+1} />)}
+			{Array(4).fill(0).map((_, i) =>
+				<img src={`/uma-tools/icons/utx_ico_weather_0${i}.png`} title={SKILL_STRINGS_en.skilldetails.weather[i + 1]}
+					class={i + 1 == props.value ? 'selected' : ''} data-weather={i + 1} />)}
 		</div>
 	);
 }
@@ -169,27 +253,27 @@ function SeasonSelect(props) {
 	}
 	return (
 		<div class="seasonSelect" onClick={click}>
-			{Array(4 + +!CC_GLOBAL /* global doenst have late spring for some reason */).fill(0).map((_,i) =>
-				<img src={`/uma-tools/icons${CC_GLOBAL?'/global':''}/utx_txt_season_0${i}.png`} title={SKILL_STRINGS_en.skilldetails.season[i+1]}
-					class={i+1 == props.value ? 'selected' : ''} data-season={i+1} />)}
+			{Array(4 + +!CC_GLOBAL /* global doenst have late spring for some reason */).fill(0).map((_, i) =>
+				<img src={`/uma-tools/icons${CC_GLOBAL ? '/global' : ''}/utx_txt_season_0${i}.png`} title={SKILL_STRINGS_en.skilldetails.season[i + 1]}
+					class={i + 1 == props.value ? 'selected' : ''} data-season={i + 1} />)}
 		</div>
 	);
 }
 
 function Histogram(props) {
-	const {data, width, height} = props;
+	const { data, width, height } = props;
 	const axes = useRef(null);
 	const xH = 20;
 	const yW = 40;
 
 	const x = d3.scaleLinear().domain(
-		data[0] == 0 && data[data.length-1] == 0
-			? [-1,1]
-			: [Math.min(0,Math.floor(data[0])),Math.ceil(data[data.length-1])]
-	).range([yW,width-yW]);
+		data[0] == 0 && data[data.length - 1] == 0
+			? [-1, 1]
+			: [Math.min(0, Math.floor(data[0])), Math.ceil(data[data.length - 1])]
+	).range([yW, width - yW]);
 	const bucketize = d3.bin().value(id).domain(x.domain()).thresholds(x.ticks(30));
 	const buckets = bucketize(data);
-	const y = d3.scaleLinear().domain([0,d3.max(buckets, b => b.length)]).range([height-xH,xH]);
+	const y = d3.scaleLinear().domain([0, d3.max(buckets, b => b.length)]).range([height - xH, xH]);
 
 	useEffect(function () {
 		const g = d3.select(axes.current);
@@ -198,7 +282,7 @@ function Histogram(props) {
 		g.append('g').attr('transform', `translate(${yW},0)`).call(d3.axisLeft(y));
 	}, [data, width, height]);
 
-	const rects = buckets.map((b,i) =>
+	const rects = buckets.map((b, i) =>
 		<rect key={i} fill="#2a77c5" stroke="black" x={x(b.x0)} y={y(b.length)} width={x(b.x1) - x(b.x0)} height={height - xH - y(b.length)} />
 	);
 	return (
@@ -218,7 +302,7 @@ function BasinnChartPopover(props) {
 		computePosition(anchor, popover.current, {
 			placement: 'bottom-start',
 			middleware: [flip()]
-		}).then(({x,y}) => {
+		}).then(({ x, y }) => {
 			popover.current.style.transform = `translate(${x}px,${y}px)`;
 			popover.current.style.visibility = 'visible';
 		});
@@ -235,10 +319,10 @@ function BasinnChartPopover(props) {
 function VelocityLines(props) {
 	const axes = useRef(null);
 	const data = props.data;
-	const x = d3.scaleLinear().domain([0,props.courseDistance]).range([0,props.width]);
-	const y = data && d3.scaleLinear().domain([0,d3.max(data.v, v => d3.max(v))]).range([props.height,0]);
-	const hpY = data && d3.scaleLinear().domain([0,d3.max(data.hp, hp => d3.max(hp))]).range([props.height,0]);
-	
+	const x = d3.scaleLinear().domain([0, props.courseDistance]).range([0, props.width]);
+	const y = data && d3.scaleLinear().domain([0, d3.max(data.v, v => d3.max(v))]).range([props.height, 0]);
+	const hpY = data && d3.scaleLinear().domain([0, d3.max(data.hp, hp => d3.max(hp))]).range([props.height, 0]);
+
 	const pacemakerY = data && data.pacerGap && (() => {
 		const allValues = data.pacerGap.flatMap(gap => gap.filter(d => d !== undefined));
 		if (allValues.length === 0) return null;
@@ -247,19 +331,19 @@ function VelocityLines(props) {
 		const domainMax = Math.max(maxValue, 10);
 		return d3.scaleLinear().domain([0, domainMax]).range([props.height, bottom60Percent]);
 	})();
-	
+
 	const laneY = data && data.currentLane && props.horseLane && (() => {
 		const gateCount = 9;
 		const maxLane = Math.max(gateCount + 1, 11) * props.horseLane;
 		const bottom50Percent = props.height * 0.5;
 		return d3.scaleLinear().domain([0, maxLane]).range([props.height, bottom50Percent]);
 	})();
-	
+
 	useEffect(function () {
 		if (axes.current == null) return;
 		const g = d3.select(axes.current);
 		g.selectAll('*').remove();
-		g.append('g').attr('transform', `translate(${props.xOffset},${props.height+5})`).call(d3.axisBottom(x));
+		g.append('g').attr('transform', `translate(${props.xOffset},${props.height + 5})`).call(d3.axisBottom(x));
 		if (data) {
 			g.append('g').attr('transform', `translate(${props.xOffset},4)`).call(d3.axisLeft(y));
 		}
@@ -271,33 +355,33 @@ function VelocityLines(props) {
 	return (
 		<Fragment>
 			<g transform={`translate(${props.xOffset},5)`}>
-				{data && data.v.map((v,i) =>
+				{data && data.v.map((v, i) =>
 					<path fill="none" stroke={colors[i]} stroke-width="2.5" d={
-						d3.line().x(j => x(data.p[i][j])).y(j => y(v[j]))(data.p[i].map((_,j) => j))
+						d3.line().x(j => x(data.p[i][j])).y(j => y(v[j]))(data.p[i].map((_, j) => j))
 					} />
-				).concat(props.showHp ? data.hp.map((hp,i) =>
+				).concat(props.showHp ? data.hp.map((hp, i) =>
 					<path fill="none" stroke={hpColors[i]} stroke-width="2.5" d={
-						d3.line().x(j => x(data.p[i][j])).y(j => hpY(hp[j]))(data.p[i].map((_,j) => j))
+						d3.line().x(j => x(data.p[i][j])).y(j => hpY(hp[j]))(data.p[i].map((_, j) => j))
 					} />
-				) : []).concat(props.showLanes && data.currentLane && laneY ? data.currentLane.map((lanes,i) =>
+				) : []).concat(props.showLanes && data.currentLane && laneY ? data.currentLane.map((lanes, i) =>
 					<path fill="none" stroke={laneColors[i]} stroke-width="2.5" d={
-						d3.line().x(j => x(data.p[i][j])).y(j => laneY(lanes[j]))(data.p[i].map((_,j) => j))
+						d3.line().x(j => x(data.p[i][j])).y(j => laneY(lanes[j]))(data.p[i].map((_, j) => j))
 					} />
-				) : []).concat(data.pacerGap && pacemakerY ? data.pacerGap.map((gap,i) => {
-					const validPoints = data.p[i].map((_,j) => ({x: j, gap: gap[j]})).filter(p => p.gap !== undefined && p.gap >= 0);
+				) : []).concat(data.pacerGap && pacemakerY ? data.pacerGap.map((gap, i) => {
+					const validPoints = data.p[i].map((_, j) => ({ x: j, gap: gap[j] })).filter(p => p.gap !== undefined && p.gap >= 0);
 					if (validPoints.length === 0) return null;
-					
+
 					return <path key={i} fill="none" stroke={colors[i]} stroke-width="2" stroke-dasharray="5,5" d={
 						d3.line().x(j => x(data.p[i][j])).y(j => pacemakerY(gap[j]))(validPoints.map(p => p.x))
 					} />;
 				}).filter(Boolean) : []).concat(props.showVirtualPacemaker && data.pacerV && data.pacerP ? (() => {
 					const pacemakerLines = [];
 					for (let pacemakerIndex = 0; pacemakerIndex < 3; pacemakerIndex++) {
-						if (props.selectedPacemakers && props.selectedPacemakers[pacemakerIndex] && 
+						if (props.selectedPacemakers && props.selectedPacemakers[pacemakerIndex] &&
 							data.pacerV && data.pacerV[pacemakerIndex] && data.pacerP && data.pacerP[pacemakerIndex]) {
 							const pacerV = data.pacerV[pacemakerIndex];
 							const pacerP = data.pacerP[pacemakerIndex];
-							const validPoints = pacerP.map((_,j) => ({x: j, vel: pacerV[j], pos: pacerP[j]})).filter(p => p.vel !== undefined && p.pos !== undefined);
+							const validPoints = pacerP.map((_, j) => ({ x: j, vel: pacerV[j], pos: pacerP[j] })).filter(p => p.vel !== undefined && p.pos !== undefined);
 							if (validPoints.length > 0) {
 								pacemakerLines.push(
 									<path key={`vp-${pacemakerIndex}`} fill="none" stroke={pacemakerColors[pacemakerIndex]} stroke-width="2.5" d={
@@ -323,14 +407,14 @@ const NO_SHOW = Object.freeze([
 ]);
 
 const ORDER_RANGE_FOR_STRATEGY = Object.freeze({
-	'Nige': [1,1],
-	'Senkou': [2,4],
-	'Sasi': [5,9],
-	'Oikomi': [5,9],
-	'Oonige': [1,1]
+	'Nige': [1, 1],
+	'Senkou': [2, 4],
+	'Sasi': [5, 9],
+	'Oikomi': [5, 9],
+	'Oonige': [1, 1]
 });
 
-function racedefToParams({mood, ground, weather, season, time, grade}: RaceParams, includeOrder?: string): RaceParameters {
+function racedefToParams({ mood, ground, weather, season, time, grade }: RaceParams, includeOrder?: string): RaceParameters {
 	return {
 		mood, groundCondition: ground, weather, season, time, grade,
 		popularity: 1,
@@ -418,7 +502,7 @@ async function deserialize(hash) {
 						.set('forcedSkillPositions', ImmMap(o.uma2.forcedSkillPositions || {})),
 					pacer: o.pacer ? new HorseState(o.pacer)
 						.set('skills', SkillSet(o.pacer.skills || []))
-						.set('forcedSkillPositions', ImmMap(o.pacer.forcedSkillPositions || {})) : new HorseState({strategy: 'Nige'}),
+						.set('forcedSkillPositions', ImmMap(o.pacer.forcedSkillPositions || {})) : new HorseState({ strategy: 'Nige' }),
 					witVarianceSettings: o.witVarianceSettings || {
 						allowRushedUma1: true,
 						allowRushedUma2: true,
@@ -444,7 +528,7 @@ async function deserialize(hash) {
 					racedef: new RaceParams(),
 					uma1: new HorseState(),
 					uma2: new HorseState(),
-					pacer: new HorseState({strategy: 'Nige'}),
+					pacer: new HorseState({ strategy: 'Nige' }),
 					witVarianceSettings: {
 						allowRushedUma1: true,
 						allowRushedUma2: true,
@@ -499,8 +583,8 @@ async function loadFromLocalStorage() {
 	return null;
 }
 
-const EMPTY_RESULTS_STATE = {courseId: DEFAULT_COURSE_ID, results: [], runData: null, chartData: null, displaying: '', rushedStats: null, leadCompetitionStats: null, spurtInfo: null, staminaStats: null, firstUmaStats: null};
-function updateResultsState(state: typeof EMPTY_RESULTS_STATE, o: number | string | {results: any, runData: any, rushedStats?: any, leadCompetitionStats?: any, spurtInfo?: any, staminaStats?: any, firstUmaStats?: any}) {
+const EMPTY_RESULTS_STATE = { courseId: DEFAULT_COURSE_ID, results: [], runData: null, chartData: null, displaying: '', rushedStats: null, leadCompetitionStats: null, spurtInfo: null, staminaStats: null, firstUmaStats: null };
+function updateResultsState(state: typeof EMPTY_RESULTS_STATE, o: number | string | { results: any, runData: any, rushedStats?: any, leadCompetitionStats?: any, spurtInfo?: any, staminaStats?: any, firstUmaStats?: any }) {
 	if (typeof o == 'number') {
 		return {
 			courseId: o,
@@ -515,7 +599,7 @@ function updateResultsState(state: typeof EMPTY_RESULTS_STATE, o: number | strin
 			firstUmaStats: null
 		};
 	} else if (typeof o == 'string') {
-		postEvent('setChartData', {display: o});
+		postEvent('setChartData', { display: o });
 		return {
 			courseId: state.courseId,
 			results: state.results,
@@ -546,12 +630,20 @@ function updateResultsState(state: typeof EMPTY_RESULTS_STATE, o: number | strin
 
 function RacePresets(props) {
 	const id = useId();
+	const selectedIdx = presets.findIndex(p => p.courseId == props.courseId && p.racedef.equals(props.racedef));
 	return (
 		<Fragment>
 			<label for={id}>Preset:</label>
 			<select id={id} onChange={e => { const i = +e.currentTarget.value; i > -1 && props.set(presets[i].courseId, presets[i].racedef); }}>
 				<option value="-1"></option>
-				{presets.map((p,i) => <option value={i}>{p.date.getFullYear() + '-' + (100 + p.date.getUTCMonth() + 1).toString().slice(-2) + (p.type == EventType.CM ? ' CM' : ' LOH')}</option>)}
+				{presets.map((p, i) => {
+					const fallbackLabel = p.name || (p.date.getFullYear() + '-' + (100 + p.date.getUTCMonth() + 1).toString().slice(-2) + (p.type == EventType.CM ? ' CM' : ' LOH'));
+					let optionLabel = fallbackLabel;
+					if (p.type == EventType.CM && p.name) {
+						optionLabel = p.cmIndex != null ? `CM${p.cmIndex} - ${p.name}` : `CM - ${p.name}`;
+					}
+					return <option value={i} selected={i == selectedIdx}>{optionLabel}</option>;
+				})}
 			</select>
 		</Fragment>
 	);
@@ -562,34 +654,34 @@ const baseSkillsToTest = Object.keys(skilldata).filter(id => skilldata[id].rarit
 const enum Mode { Compare, Chart, UniquesChart }
 const enum UiStateMsg { SetModeCompare, SetModeChart, SetModeUniquesChart, SetCurrentIdx0, SetCurrentIdx1, SetCurrentIdx2, ToggleExpand }
 
-const DEFAULT_UI_STATE = {mode: Mode.Compare, currentIdx: 0, expanded: false};
+const DEFAULT_UI_STATE = { mode: Mode.Compare, currentIdx: 0, expanded: false };
 
 function nextUiState(state: typeof DEFAULT_UI_STATE, msg: UiStateMsg) {
 	switch (msg) {
 		case UiStateMsg.SetModeCompare:
-			return {...state, mode: Mode.Compare};
+			return { ...state, mode: Mode.Compare };
 		case UiStateMsg.SetModeChart:
-			return {...state, mode: Mode.Chart, currentIdx: 0, expanded: false};
+			return { ...state, mode: Mode.Chart, currentIdx: 0, expanded: false };
 		case UiStateMsg.SetModeUniquesChart:
-			return {...state, mode: Mode.UniquesChart, currentIdx: 0, expanded: false};
+			return { ...state, mode: Mode.UniquesChart, currentIdx: 0, expanded: false };
 		case UiStateMsg.SetCurrentIdx0:
-			return {...state, currentIdx: 0};
+			return { ...state, currentIdx: 0 };
 		case UiStateMsg.SetCurrentIdx1:
-			return {...state, currentIdx: 1};
+			return { ...state, currentIdx: 1 };
 		case UiStateMsg.SetCurrentIdx2:
-			return {...state, currentIdx: 2};
+			return { ...state, currentIdx: 2 };
 		case UiStateMsg.ToggleExpand:
-			return {...state, expanded: !state.expanded};
+			return { ...state, expanded: !state.expanded };
 	}
 }
 
-function WitVarianceSettingsPopup({ 
-	show, 
-	onClose, 
-	allowRushedUma1, 
-	allowRushedUma2, 
-	allowDownhillUma1, 
-	allowDownhillUma2, 
+function WitVarianceSettingsPopup({
+	show,
+	onClose,
+	allowRushedUma1,
+	allowRushedUma2,
+	allowDownhillUma1,
+	allowDownhillUma2,
 	allowSectionModifierUma1,
 	allowSectionModifierUma2,
 	allowSkillCheckChanceUma1,
@@ -604,7 +696,7 @@ function WitVarianceSettingsPopup({
 	toggleSkillCheckChanceUma2
 }) {
 	if (!show) return null;
-	
+
 	return (
 		<div className="wit-variance-popup-overlay" onClick={onClose}>
 			<div className="wit-variance-popup" onClick={(e) => e.stopPropagation()}>
@@ -617,11 +709,11 @@ function WitVarianceSettingsPopup({
 						<label>Rushed State</label>
 						<div className="wit-variance-checkboxes">
 							<div className="wit-variance-checkbox-group">
-								<label style={{color: 'rgb(42, 119, 197)'}}>Uma 1</label>
+								<label style={{ color: 'rgb(42, 119, 197)' }}>Uma 1</label>
 								<input type="checkbox" checked={allowRushedUma1} onChange={toggleRushedUma1} />
 							</div>
 							<div className="wit-variance-checkbox-group">
-								<label style={{color: 'rgb(197, 42, 42)'}}>Uma 2</label>
+								<label style={{ color: 'rgb(197, 42, 42)' }}>Uma 2</label>
 								<input type="checkbox" checked={allowRushedUma2} onChange={toggleRushedUma2} />
 							</div>
 						</div>
@@ -630,11 +722,11 @@ function WitVarianceSettingsPopup({
 						<label>Downhill Mode</label>
 						<div className="wit-variance-checkboxes">
 							<div className="wit-variance-checkbox-group">
-								<label style={{color: 'rgb(42, 119, 197)'}}>Uma 1</label>
+								<label style={{ color: 'rgb(42, 119, 197)' }}>Uma 1</label>
 								<input type="checkbox" checked={allowDownhillUma1} onChange={toggleDownhillUma1} />
 							</div>
 							<div className="wit-variance-checkbox-group">
-								<label style={{color: 'rgb(197, 42, 42)'}}>Uma 2</label>
+								<label style={{ color: 'rgb(197, 42, 42)' }}>Uma 2</label>
 								<input type="checkbox" checked={allowDownhillUma2} onChange={toggleDownhillUma2} />
 							</div>
 						</div>
@@ -643,11 +735,11 @@ function WitVarianceSettingsPopup({
 						<label>Section Modifier</label>
 						<div className="wit-variance-checkboxes">
 							<div className="wit-variance-checkbox-group">
-								<label style={{color: 'rgb(42, 119, 197)'}}>Uma 1</label>
+								<label style={{ color: 'rgb(42, 119, 197)' }}>Uma 1</label>
 								<input type="checkbox" checked={allowSectionModifierUma1} onChange={toggleSectionModifierUma1} />
 							</div>
 							<div className="wit-variance-checkbox-group">
-								<label style={{color: 'rgb(197, 42, 42)'}}>Uma 2</label>
+								<label style={{ color: 'rgb(197, 42, 42)' }}>Uma 2</label>
 								<input type="checkbox" checked={allowSectionModifierUma2} onChange={toggleSectionModifierUma2} />
 							</div>
 						</div>
@@ -656,11 +748,11 @@ function WitVarianceSettingsPopup({
 						<label>Skill Check Chance</label>
 						<div className="wit-variance-checkboxes">
 							<div className="wit-variance-checkbox-group">
-								<label style={{color: 'rgb(42, 119, 197)'}}>Uma 1</label>
+								<label style={{ color: 'rgb(42, 119, 197)' }}>Uma 1</label>
 								<input type="checkbox" checked={allowSkillCheckChanceUma1} onChange={toggleSkillCheckChanceUma1} />
 							</div>
 							<div className="wit-variance-checkbox-group">
-								<label style={{color: 'rgb(197, 42, 42)'}}>Uma 2</label>
+								<label style={{ color: 'rgb(197, 42, 42)' }}>Uma 2</label>
 								<input type="checkbox" checked={allowSkillCheckChanceUma2} onChange={toggleSkillCheckChanceUma2} />
 							</div>
 						</div>
@@ -673,7 +765,7 @@ function WitVarianceSettingsPopup({
 
 function App(props) {
 	//const [language, setLanguage] = useLanguageSelect(); 
-	const [darkMode, toggleDarkMode] = useReducer(b=>!b, false);
+	const [darkMode, toggleDarkMode] = useReducer(b => !b, false);
 	const [skillsOpen, setSkillsOpen] = useState(false);
 	const [racedef, setRaceDef] = useState(() => DEFAULT_PRESET.racedef);
 	const [nsamples, setSamples] = useState(DEFAULT_SAMPLES);
@@ -682,12 +774,12 @@ function App(props) {
 	const [isSimulationRunning, setIsSimulationRunning] = useState(false);
 	const chartWorkersCompletedRef = useRef(0);
 	const [posKeepMode, setPosKeepModeRaw] = useState(PosKeepMode.Approximate);
-	const [showHp, toggleShowHp] = useReducer((b,_) => !b, false);
-	const [showLanes, toggleShowLanes] = useReducer((b,_) => !b, false);
-	
-	useEffect(() => { document.documentElement.classList.toggle('dark', darkMode);}, [darkMode]);
+	const [showHp, toggleShowHp] = useReducer((b, _) => !b, false);
+	const [showLanes, toggleShowLanes] = useReducer((b, _) => !b, false);
+
+	useEffect(() => { document.documentElement.classList.toggle('dark', darkMode); }, [darkMode]);
 	//fuck dark mode
-	
+
 	// Wrapper to handle mode changes and reset tab if needed
 	function setPosKeepMode(mode: PosKeepMode) {
 		setPosKeepModeRaw(mode);
@@ -697,31 +789,31 @@ function App(props) {
 		}
 	}
 
-	const [allowRushedUma1, toggleRushedUma1] = useReducer((b,_) => !b, true);
-	const [allowRushedUma2, toggleRushedUma2] = useReducer((b,_) => !b, true);
-	const [allowDownhillUma1, toggleDownhillUma1] = useReducer((b,_) => !b, true);
-	const [allowDownhillUma2, toggleDownhillUma2] = useReducer((b,_) => !b, true);
-	const [allowSectionModifierUma1, toggleSectionModifierUma1] = useReducer((b,_) => !b, true);
-	const [allowSectionModifierUma2, toggleSectionModifierUma2] = useReducer((b,_) => !b, true);
-	const [allowSkillCheckChanceUma1, toggleSkillCheckChanceUma1] = useReducer((b,_) => !b, true);
-	const [allowSkillCheckChanceUma2, toggleSkillCheckChanceUma2] = useReducer((b,_) => !b, true);
-	const [simWitVariance, toggleSimWitVariance] = useReducer((b,_) => !b, false);
+	const [allowRushedUma1, toggleRushedUma1] = useReducer((b, _) => !b, true);
+	const [allowRushedUma2, toggleRushedUma2] = useReducer((b, _) => !b, true);
+	const [allowDownhillUma1, toggleDownhillUma1] = useReducer((b, _) => !b, true);
+	const [allowDownhillUma2, toggleDownhillUma2] = useReducer((b, _) => !b, true);
+	const [allowSectionModifierUma1, toggleSectionModifierUma1] = useReducer((b, _) => !b, true);
+	const [allowSectionModifierUma2, toggleSectionModifierUma2] = useReducer((b, _) => !b, true);
+	const [allowSkillCheckChanceUma1, toggleSkillCheckChanceUma1] = useReducer((b, _) => !b, true);
+	const [allowSkillCheckChanceUma2, toggleSkillCheckChanceUma2] = useReducer((b, _) => !b, true);
+	const [simWitVariance, toggleSimWitVariance] = useReducer((b, _) => !b, false);
 	const [showWitVarianceSettings, setShowWitVarianceSettings] = useState(false);
-	const [showVirtualPacemakerOnGraph, toggleShowVirtualPacemakerOnGraph] = useReducer((b,_) => !b, false);
+	const [showVirtualPacemakerOnGraph, toggleShowVirtualPacemakerOnGraph] = useReducer((b, _) => !b, false);
 	const [pacemakerCount, setPacemakerCount] = useState(1);
 	const [selectedPacemakerIndices, setSelectedPacemakerIndices] = useState([]); // Array of selected pacemaker indices (0, 1, 2), empty means none selected
 	const [isPacemakerDropdownOpen, setIsPacemakerDropdownOpen] = useState(false);
-	
+
 	function handlePacemakerCountChange(newCount: number) {
 		setPacemakerCount(newCount);
 		const newSelection = selectedPacemakerIndices.filter(index => index < newCount);
 		setSelectedPacemakerIndices(newSelection);
 	}
-	
+
 	function handlePacemakerSelectionChange(selectedIndices: number[]) {
 		setSelectedPacemakerIndices(selectedIndices);
 	}
-	
+
 	function togglePacemakerSelection(index: number) {
 		const newSelection = [...selectedPacemakerIndices];
 		const existingIndex = newSelection.indexOf(index);
@@ -733,7 +825,7 @@ function App(props) {
 
 		setSelectedPacemakerIndices(newSelection);
 	}
-	
+
 	function getSelectedPacemakers(): boolean[] {
 		const result = [false, false, false];
 
@@ -745,11 +837,11 @@ function App(props) {
 
 		return result;
 	}
-	
+
 	function handleSimWitVarianceToggle() {
 		toggleSimWitVariance(null);
 	}
-	
+
 	function autoSaveSettings() {
 		saveToLocalStorage(courseId, nsamples, seed, posKeepMode, racedef, uma1, uma2, pacer, showVirtualPacemakerOnGraph, pacemakerCount, getSelectedPacemakers(), showLanes, {
 			allowRushedUma1,
@@ -768,28 +860,28 @@ function App(props) {
 		setUma1(new HorseState());
 		setUma2(new HorseState());
 		if (posKeepMode === PosKeepMode.Virtual) {
-			setPacer(new HorseState({strategy: 'Nige'}));
+			setPacer(new HorseState({ strategy: 'Nige' }));
 		}
 	}
-	
+
 	function resetAllUmas() {
 		setUma1(new HorseState());
 		setUma2(new HorseState());
-		setPacer(new HorseState({strategy: 'Nige'}));
+		setPacer(new HorseState({ strategy: 'Nige' }));
 	}
-	
-	const [{courseId, results, runData, chartData, displaying, rushedStats, leadCompetitionStats, spurtInfo, staminaStats, firstUmaStats}, setSimState] = useReducer(updateResultsState, EMPTY_RESULTS_STATE);
+
+	const [{ courseId, results, runData, chartData, displaying, rushedStats, leadCompetitionStats, spurtInfo, staminaStats, firstUmaStats }, setSimState] = useReducer(updateResultsState, EMPTY_RESULTS_STATE);
 	const setCourseId = setSimState;
 	const setResults = setSimState;
 	const setChartData = setSimState;
 
-	const [tableData, updateTableData] = useReducer((data,newData) => {
+	const [tableData, updateTableData] = useReducer((data, newData) => {
 		const merged = new Map();
 		if (newData == 'reset') {
 			return merged;
 		}
-		data.forEach((v,k) => merged.set(k,v));
-		newData.forEach((v,k) => merged.set(k,v));
+		data.forEach((v, k) => merged.set(k, v));
+		newData.forEach((v, k) => merged.set(k, v));
 		return merged;
 	}, new Map());
 
@@ -803,19 +895,19 @@ function App(props) {
 
 	const [uma1, setUma1] = useState(() => new HorseState());
 	const [uma2, setUma2] = useState(() => new HorseState());
-	const [pacer, setPacer] = useState(() => new HorseState({strategy: 'Nige'}));
+	const [pacer, setPacer] = useState(() => new HorseState({ strategy: 'Nige' }));
 
-	const [{mode, currentIdx, expanded}, updateUiState] = useReducer(nextUiState, DEFAULT_UI_STATE);
+	const [{ mode, currentIdx, expanded }, updateUiState] = useReducer(nextUiState, DEFAULT_UI_STATE);
 	function toggleExpand(e: Event) {
 		e.stopPropagation();
-		postEvent('toggleExpand', {expand: !expanded});
+		postEvent('toggleExpand', { expand: !expanded });
 		updateUiState(UiStateMsg.ToggleExpand);
 	}
 
-	const [worker1, worker2] = [1,2].map(_ => useMemo(() => {
+	const [worker1, worker2] = [1, 2].map(_ => useMemo(() => {
 		const w = new Worker('./simulator.worker.js');
 		w.addEventListener('message', function (e) {
-			const {type, results} = e.data;
+			const { type, results } = e.data;
 			switch (type) {
 				case 'compare':
 					setResults(results);
@@ -850,10 +942,10 @@ function App(props) {
 				setUma2(o.uma2);
 				setPacer(o.pacer);
 				setPacemakerCount(o.pacemakerCount);
-				setSelectedPacemakerIndices(o.selectedPacemakers ? 
-					o.selectedPacemakers.map((selected, index) => selected ? index : -1).filter(index => index !== -1) : 
+				setSelectedPacemakerIndices(o.selectedPacemakers ?
+					o.selectedPacemakers.map((selected, index) => selected ? index : -1).filter(index => index !== -1) :
 					[]);
-				
+
 				if (o.showVirtualPacemakerOnGraph !== undefined && o.showVirtualPacemakerOnGraph !== showVirtualPacemakerOnGraph) {
 					toggleShowVirtualPacemakerOnGraph(null);
 				}
@@ -887,10 +979,10 @@ function App(props) {
 					setUma2(o.uma2);
 					setPacer(o.pacer);
 					setPacemakerCount(o.pacemakerCount);
-					setSelectedPacemakerIndices(o.selectedPacemakers ? 
-						o.selectedPacemakers.map((selected, index) => selected ? index : -1).filter(index => index !== -1) : 
+					setSelectedPacemakerIndices(o.selectedPacemakers ?
+						o.selectedPacemakers.map((selected, index) => selected ? index : -1).filter(index => index !== -1) :
 						[]);
-					
+
 					if (o.showVirtualPacemakerOnGraph !== undefined && o.showVirtualPacemakerOnGraph !== showVirtualPacemakerOnGraph) {
 						toggleShowVirtualPacemakerOnGraph(null);
 					}
@@ -925,7 +1017,7 @@ function App(props) {
 	useEffect(() => {
 		autoSaveSettings();
 	}, [courseId, nsamples, seed, posKeepMode, racedef, uma1, uma2, pacer, allowRushedUma1, allowRushedUma2, allowDownhillUma1, allowDownhillUma2, allowSectionModifierUma1, allowSectionModifierUma2, allowSkillCheckChanceUma1, allowSkillCheckChanceUma2, simWitVariance, showVirtualPacemakerOnGraph, pacemakerCount, selectedPacemakerIndices]);
-	
+
 	useEffect(() => {
 		const shouldShow = posKeepMode === PosKeepMode.Virtual && selectedPacemakerIndices.length > 0;
 		if (shouldShow !== showVirtualPacemakerOnGraph) {
@@ -956,22 +1048,22 @@ function App(props) {
 	}
 
 	function copyUmaToRight() {
-		postEvent('copyUma', {direction: 'to-right'});
+		postEvent('copyUma', { direction: 'to-right' });
 		setUma2(uma1);
 	}
 
 	function copyUmaToLeft() {
-		postEvent('copyUma', {direction: 'to-left'});
+		postEvent('copyUma', { direction: 'to-left' });
 		setUma1(uma2);
 	}
 
 	function swapUmas() {
-		postEvent('copyUma', {direction: 'swap'});
+		postEvent('copyUma', { direction: 'swap' });
 		setUma1(uma2);
 		setUma2(uma1);
 	}
 
-	const strings = {skillnames: {}, tracknames: TRACKNAMES_en};
+	const strings = { skillnames: {}, tracknames: TRACKNAMES_en };
 	const langid = +(props.lang == 'en');
 	Object.keys(skillnames).forEach(id => strings.skillnames[id] = skillnames[id][langid]);
 
@@ -988,8 +1080,8 @@ function App(props) {
 				uma2: uma2.toJS(),
 				pacer: pacer.toJS(),
 				options: {
-					seed, 
-					posKeepMode, 
+					seed,
+					posKeepMode,
 					allowRushedUma1: simWitVariance ? allowRushedUma1 : false,
 					allowRushedUma2: simWitVariance ? allowRushedUma2 : false,
 					allowDownhillUma1: simWitVariance ? allowDownhillUma1 : false,
@@ -1021,8 +1113,8 @@ function App(props) {
 				uma2: uma2.toJS(),
 				pacer: pacer.toJS(),
 				options: {
-					seed: effectiveSeed, 
-					posKeepMode, 
+					seed: effectiveSeed,
+					posKeepMode,
 					allowRushedUma1: simWitVariance ? allowRushedUma1 : false,
 					allowRushedUma2: simWitVariance ? allowRushedUma2 : false,
 					allowDownhillUma1: simWitVariance ? allowDownhillUma1 : false,
@@ -1045,7 +1137,7 @@ function App(props) {
 			return skill.rarity >= 4 && id.startsWith('1');
 		});
 	}
-	
+
 	function removeUniqueSkills(uma) {
 		const uniqueSkills = getUniqueSkills();
 		const filteredSkills = uma.skills.filter(skillId => !uniqueSkills.includes(skillId));
@@ -1068,19 +1160,19 @@ function App(props) {
 			skills = getActivateableSkills(baseSkillsToTest.filter(s => !uma1.skills.has(s) && (s[0] != '9' || !uma1.skills.has('1' + s.slice(1)))), uma1, course, params);
 			uma = uma1.toJS();
 		}
-		
+
 		const filler = new Map();
 		skills.forEach(id => filler.set(id, getNullRow(id)));
-		const skills1 = skills.slice(0,Math.floor(skills.length/2));
-		const skills2 = skills.slice(Math.floor(skills.length/2));
+		const skills1 = skills.slice(0, Math.floor(skills.length / 2));
+		const skills2 = skills.slice(Math.floor(skills.length / 2));
 		updateTableData('reset');
 		updateTableData(filler);
 		worker1.postMessage({
-			msg: 'chart', 
+			msg: 'chart',
 			data: {
 				skills: skills1, course, racedef: params, uma, pacer: pacer.toJS(), options: {
-					seed, 
-					posKeepMode: PosKeepMode.Approximate, 
+					seed,
+					posKeepMode: PosKeepMode.Approximate,
 					allowRushedUma1: false,
 					allowRushedUma2: false,
 					allowDownhillUma1: false,
@@ -1096,12 +1188,12 @@ function App(props) {
 			}
 		});
 		worker2.postMessage({
-			msg: 'chart', 
+			msg: 'chart',
 			data: {
-				skills: skills2, course, racedef: params, uma, pacer: pacer.toJS(), 
+				skills: skills2, course, racedef: params, uma, pacer: pacer.toJS(),
 				options: {
-					seed, 
-					posKeepMode: PosKeepMode.Approximate, 
+					seed,
+					posKeepMode: PosKeepMode.Approximate,
 					allowRushedUma1: false,
 					allowRushedUma2: false,
 					allowDownhillUma1: false,
@@ -1124,12 +1216,12 @@ function App(props) {
 	}
 
 	function addSkillFromTable(skillId) {
-		postEvent('addSkillFromTable', {skillId});
+		postEvent('addSkillFromTable', { skillId });
 		setUma1(uma1.set('skills', uma1.skills.add(skillId)));
 	}
 
 	function showPopover(skillId) {
-		postEvent('showPopover', {skillId});
+		postEvent('showPopover', { skillId });
 		setPopoverSkill(skillId);
 	}
 
@@ -1138,14 +1230,14 @@ function App(props) {
 			setPopoverSkill('');
 		});
 	}, []);
-	
+
 	useEffect(function () {
 		function handleClickOutside(event) {
 			if (isPacemakerDropdownOpen && !event.target.closest('.pacemaker-combobox')) {
 				setIsPacemakerDropdownOpen(false);
 			}
 		}
-		
+
 		document.addEventListener('click', handleClickOutside);
 		return () => document.removeEventListener('click', handleClickOutside);
 	}, [isPacemakerDropdownOpen]);
@@ -1156,11 +1248,11 @@ function App(props) {
 		const x = pos * course.distance;
 		const i0 = binSearch(chartData.p[0], x), i1 = binSearch(chartData.p[1], x);
 
-		
+
 		// Ensure indices are within bounds
 		const safeI0 = Math.max(0, Math.min(i0, chartData.v[0].length - 1));
 		const safeI1 = Math.max(0, Math.min(i1, chartData.v[1].length - 1));
-		
+
 		document.getElementById('rtV1').textContent = `${chartData.v[0][safeI0].toFixed(2)} m/s  t=${chartData.t[0][safeI0].toFixed(2)} s  (${chartData.hp[0][safeI0].toFixed(0)} hp remaining)`;
 		document.getElementById('rtV2').textContent = `${chartData.v[1][safeI1].toFixed(2)} m/s  t=${chartData.t[1][safeI1].toFixed(2)} s  (${chartData.hp[1][safeI1].toFixed(0)} hp remaining)`;
 	}
@@ -1169,9 +1261,9 @@ function App(props) {
 		document.getElementById('rtMouseOverBox').style.display = 'none';
 	}
 
-	function handleSkillDrag(skillId, umaIndex, newStart, newEnd){
-		console.log('handleSkillDrag called:', {skillId, umaIndex, newStart, newEnd});
-		
+	function handleSkillDrag(skillId, umaIndex, newStart, newEnd) {
+		console.log('handleSkillDrag called:', { skillId, umaIndex, newStart, newEnd });
+
 		// Update the forced skill position for the appropriate horse
 		if (umaIndex === 0) {
 			setUma1(uma1.set('forcedSkillPositions', uma1.forcedSkillPositions.set(skillId, newStart)));
@@ -1183,14 +1275,14 @@ function App(props) {
 	}
 
 	const mid = Math.floor(results.length / 2);
-	const median = results.length % 2 == 0 ? (results[mid-1] + results[mid]) / 2 : results[mid];
-	const mean = results.reduce((a,b) => a+b, 0) / results.length;
+	const median = results.length % 2 == 0 ? (results[mid - 1] + results[mid]) / 2 : results[mid];
+	const mean = results.reduce((a, b) => a + b, 0) / results.length;
 
 	const colors = [
-		{stroke: 'rgb(42, 119, 197)', fill: 'rgba(42, 119, 197, 0.7)'},
-		{stroke: 'rgb(197, 42, 42)', fill: 'rgba(197, 42, 42, 0.7)'}
+		{ stroke: 'rgb(42, 119, 197)', fill: 'rgba(42, 119, 197, 0.7)' },
+		{ stroke: 'rgb(197, 42, 42)', fill: 'rgba(197, 42, 42, 0.7)' }
 	];
-	const skillActivations = chartData == null ? [] : chartData.sk.flatMap((a,i) => {
+	const skillActivations = chartData == null ? [] : chartData.sk.flatMap((a, i) => {
 		return Array.from(a.keys()).flatMap(id => {
 			if (NO_SHOW.indexOf(skillmeta(id).iconId) > -1) return [];
 			else return a.get(id).map(ar => ({
@@ -1199,30 +1291,30 @@ function App(props) {
 				text: skillnames[id][0],
 				skillId: id,
 				umaIndex: i,
-				regions: [{start: ar[0], end: ar[1]}]
+				regions: [{ start: ar[0], end: ar[1] }]
 			}));
 		});
 	});
-	
+
 	const rushedColors = [
-		{stroke: 'rgb(42, 119, 197)', fill: 'rgba(42, 119, 197, 0.8)'},  // Blue for Uma 1
-		{stroke: 'rgb(197, 42, 42)', fill: 'rgba(197, 42, 42, 0.8)'}     // Red for Uma 2
+		{ stroke: 'rgb(42, 119, 197)', fill: 'rgba(42, 119, 197, 0.8)' },  // Blue for Uma 1
+		{ stroke: 'rgb(197, 42, 42)', fill: 'rgba(197, 42, 42, 0.8)' }     // Red for Uma 2
 	];
-	const rushedIndicators = chartData == null ? [] : (chartData.rushed || [[], []]).flatMap((rushArray,i) => {
+	const rushedIndicators = chartData == null ? [] : (chartData.rushed || [[], []]).flatMap((rushArray, i) => {
 		return rushArray.map(ar => ({
 			type: RegionDisplayType.Textbox,
 			color: rushedColors[i],
 			text: 'Rushed',
-			regions: [{start: ar[0], end: ar[1]}]
+			regions: [{ start: ar[0], end: ar[1] }]
 		}));
 	});
 
 	const posKeepColors = [
-		{stroke: 'rgb(42, 119, 197)', fill: 'rgba(42, 119, 197, 0.6)'},
-		{stroke: 'rgb(197, 42, 42)', fill: 'rgba(197, 42, 42, 0.6)'}
+		{ stroke: 'rgb(42, 119, 197)', fill: 'rgba(42, 119, 197, 0.6)' },
+		{ stroke: 'rgb(197, 42, 42)', fill: 'rgba(197, 42, 42, 0.6)' }
 	];
-	
-	const posKeepData = chartData == null ? [] : (chartData.posKeep || [[], []]).flatMap((posKeepArray,i) => {
+
+	const posKeepData = chartData == null ? [] : (chartData.posKeep || [[], []]).flatMap((posKeepArray, i) => {
 		return posKeepArray.map(ar => {
 			const stateName = ar[2] === 1 ? 'PU' : ar[2] === 2 ? 'PDM' : ar[2] === 3 ? 'SU' : ar[2] === 4 ? 'O' : 'Unknown';
 			return {
@@ -1235,18 +1327,18 @@ function App(props) {
 			};
 		});
 	});
-	
-	const virtualPacemakerPosKeepData = showVirtualPacemakerOnGraph && posKeepMode === PosKeepMode.Virtual && chartData && chartData.pacerPosKeep ? 
+
+	const virtualPacemakerPosKeepData = showVirtualPacemakerOnGraph && posKeepMode === PosKeepMode.Virtual && chartData && chartData.pacerPosKeep ?
 		(() => {
 			const pacemakerPosKeepData = [];
 			const pacemakerColors = [
-				{stroke: '#22c55e', fill: 'rgba(34, 197, 94, 0.6)'},   // Green
-				{stroke: '#a855f7', fill: 'rgba(168, 85, 247, 0.6)'},  // Purple  
-				{stroke: '#ec4899', fill: 'rgba(236, 72, 153, 0.6)'}   // Pink
+				{ stroke: '#22c55e', fill: 'rgba(34, 197, 94, 0.6)' },   // Green
+				{ stroke: '#a855f7', fill: 'rgba(168, 85, 247, 0.6)' },  // Purple  
+				{ stroke: '#ec4899', fill: 'rgba(236, 72, 153, 0.6)' }   // Pink
 			];
-			
+
 			for (let pacemakerIndex = 0; pacemakerIndex < 3; pacemakerIndex++) {
-				if (selectedPacemakerIndices.includes(pacemakerIndex) && 
+				if (selectedPacemakerIndices.includes(pacemakerIndex) &&
 					chartData.pacerPosKeep && chartData.pacerPosKeep[pacemakerIndex]) {
 					const pacerPosKeepArray = chartData.pacerPosKeep[pacemakerIndex];
 					pacerPosKeepArray.forEach(ar => {
@@ -1264,7 +1356,7 @@ function App(props) {
 			}
 			return pacemakerPosKeepData;
 		})() : [];
-	
+
 	const competeFightData = chartData == null ? [] : (chartData.competeFight || [[], []]).flatMap((competeFightArray, i) => {
 		if (!competeFightArray || competeFightArray.length === 0) return [];
 		const start = competeFightArray[0];
@@ -1278,7 +1370,7 @@ function App(props) {
 			duration: end - start
 		}];
 	});
-	
+
 	const leadCompetitionData = chartData == null ? [] : (chartData.leadCompetition || [[], []]).flatMap((leadCompetitionArray, i) => {
 		if (!leadCompetitionArray || leadCompetitionArray.length === 0) return [];
 		const start = leadCompetitionArray[0];
@@ -1292,18 +1384,18 @@ function App(props) {
 			duration: end - start
 		}];
 	});
-	
-	const virtualPacemakerLeadCompetitionData = showVirtualPacemakerOnGraph && posKeepMode === PosKeepMode.Virtual && chartData && chartData.pacerLeadCompetition ? 
+
+	const virtualPacemakerLeadCompetitionData = showVirtualPacemakerOnGraph && posKeepMode === PosKeepMode.Virtual && chartData && chartData.pacerLeadCompetition ?
 		(() => {
 			const pacemakerLeadCompetitionData = [];
 			const pacemakerColors = [
-				{stroke: '#22c55e', fill: 'rgba(34, 197, 94, 0.6)'},
-				{stroke: '#a855f7', fill: 'rgba(168, 85, 247, 0.6)'},
-				{stroke: '#ec4899', fill: 'rgba(236, 72, 153, 0.6)'}
+				{ stroke: '#22c55e', fill: 'rgba(34, 197, 94, 0.6)' },
+				{ stroke: '#a855f7', fill: 'rgba(168, 85, 247, 0.6)' },
+				{ stroke: '#ec4899', fill: 'rgba(236, 72, 153, 0.6)' }
 			];
-			
+
 			for (let pacemakerIndex = 0; pacemakerIndex < 3; pacemakerIndex++) {
-				if (selectedPacemakerIndices.includes(pacemakerIndex) && 
+				if (selectedPacemakerIndices.includes(pacemakerIndex) &&
 					chartData.pacerLeadCompetition && chartData.pacerLeadCompetition[pacemakerIndex] && chartData.pacerLeadCompetition[pacemakerIndex].length > 0) {
 					const leadCompetitionArray = chartData.pacerLeadCompetition[pacemakerIndex];
 					const start = leadCompetitionArray[0];
@@ -1320,40 +1412,40 @@ function App(props) {
 			}
 			return pacemakerLeadCompetitionData;
 		})() : [];
-	
+
 	const posKeepLabels = [];
-	
+
 	const tempLabels = [...posKeepData, ...virtualPacemakerPosKeepData, ...competeFightData, ...leadCompetitionData, ...virtualPacemakerLeadCompetitionData].map(posKeep => ({
 		...posKeep,
 		x: posKeep.start / course.distance * 960,
 		width: posKeep.duration / course.distance * 960,
 		yOffset: 0
 	}));
-	
+
 	tempLabels.sort((a, b) => a.x - b.x);
-	
+
 	for (let i = 0; i < tempLabels.length; i++) {
 		const currentLabel = tempLabels[i];
 		let maxYOffset = 40;
-		
+
 		for (let j = 0; j < i; j++) {
 			const prevLabel = tempLabels[j];
-			
+
 			// Check if labels overlap horizontally
 			const padding = 0; // Add padding to prevent labels from being too close
-			const overlap = !(currentLabel.x + currentLabel.width + padding < prevLabel.x || 
-							 currentLabel.x > prevLabel.x + prevLabel.width + padding);
-			
+			const overlap = !(currentLabel.x + currentLabel.width + padding < prevLabel.x ||
+				currentLabel.x > prevLabel.x + prevLabel.width + padding);
+
 			if (overlap) {
 				// Labels overlap, need to offset vertically
 				maxYOffset = Math.max(maxYOffset, prevLabel.yOffset + 15);
 			}
 		}
-		
+
 		currentLabel.yOffset = maxYOffset;
 		posKeepLabels.push(currentLabel);
 	}
-	
+
 
 	const umaTabs = (
 		<Fragment>
@@ -1376,67 +1468,67 @@ function App(props) {
 									maxrun: ['Maximum', 'Set chart display to the run with maximum bashin difference'],
 									meanrun: ['Mean', 'Set chart display to a run representative of the mean bashin difference'],
 									medianrun: ['Median', 'Set chart display to a run representative of the median bashin difference']
-								}).map(([k,label]) =>
+								}).map(([k, label]) =>
 									<th scope="col" class={displaying == k ? 'selected' : ''} title={label[1]} onClick={() => setChartData(k)}>{label[0]}</th>
 								)}
 							</tr>
 						</tfoot>
 						<tbody>
 							<tr>
-								<td onClick={() => setChartData('minrun')}>{results[0].toFixed(2)}<span class="unit-basinn">{CC_GLOBAL?'lengths':'バ身'}</span></td>
-								<td onClick={() => setChartData('maxrun')}>{results[results.length-1].toFixed(2)}<span class="unit-basinn">{CC_GLOBAL?'lengths':'バ身'}</span></td>
-								<td onClick={() => setChartData('meanrun')}>{mean.toFixed(2)}<span class="unit-basinn">{CC_GLOBAL?'lengths':'バ身'}</span></td>
-								<td onClick={() => setChartData('medianrun')}>{median.toFixed(2)}<span class="unit-basinn">{CC_GLOBAL?'lengths':'バ身'}</span></td>
+								<td onClick={() => setChartData('minrun')}>{results[0].toFixed(2)}<span class="unit-basinn">{CC_GLOBAL ? 'lengths' : 'バ身'}</span></td>
+								<td onClick={() => setChartData('maxrun')}>{results[results.length - 1].toFixed(2)}<span class="unit-basinn">{CC_GLOBAL ? 'lengths' : 'バ身'}</span></td>
+								<td onClick={() => setChartData('meanrun')}>{mean.toFixed(2)}<span class="unit-basinn">{CC_GLOBAL ? 'lengths' : 'バ身'}</span></td>
+								<td onClick={() => setChartData('medianrun')}>{median.toFixed(2)}<span class="unit-basinn">{CC_GLOBAL ? 'lengths' : 'バ身'}</span></td>
 							</tr>
 						</tbody>
 					</table>
 					<div id="resultsHelp">Negative numbers mean <strong style="color:#2a77c5">Umamusume 1</strong> is faster, positive numbers mean <strong style="color:#c52a2a">Umamusume 2</strong> is faster.</div>
-					
-					
+
+
 					{(firstUmaStats || staminaStats) && (
-						<div style={{marginTop: '15px', marginBottom: '10px', textAlign: 'center'}}>
+						<div style={{ marginTop: '15px', marginBottom: '10px', textAlign: 'center' }}>
 							{firstUmaStats && (
-								<div style={{marginBottom: '2px', display: 'flex', justifyContent: 'center', gap: '40px'}}>
-									<div style={{textAlign: 'right', minWidth: '250px'}}>
-										<strong>Uma 1:</strong> Final leg 1st place: <span style={{color: '#2a77c5', fontWeight: 'bold'}}>{firstUmaStats.uma1.firstPlaceRate.toFixed(1)}%</span>
+								<div style={{ marginBottom: '2px', display: 'flex', justifyContent: 'center', gap: '40px' }}>
+									<div style={{ textAlign: 'right', minWidth: '250px' }}>
+										<strong>Uma 1:</strong> Final leg 1st place: <span style={{ color: '#2a77c5', fontWeight: 'bold' }}>{firstUmaStats.uma1.firstPlaceRate.toFixed(1)}%</span>
 									</div>
-									<div style={{textAlign: 'left', minWidth: '250px'}}>
-										<strong>Uma 2:</strong> Final leg 1st place: <span style={{color: '#c52a2a', fontWeight: 'bold'}}>{firstUmaStats.uma2.firstPlaceRate.toFixed(1)}%</span>
+									<div style={{ textAlign: 'left', minWidth: '250px' }}>
+										<strong>Uma 2:</strong> Final leg 1st place: <span style={{ color: '#c52a2a', fontWeight: 'bold' }}>{firstUmaStats.uma2.firstPlaceRate.toFixed(1)}%</span>
 									</div>
 								</div>
 							)}
 							{staminaStats && (
 								<>
-									<div style={{marginBottom: '2px', display: 'flex', justifyContent: 'center', gap: '40px'}}>
-										<div style={{textAlign: 'right', minWidth: '250px'}}>
-											<strong>Uma 1:</strong> Spurt Rate: <span style={{color: '#2a77c5', fontWeight: 'bold'}}>{staminaStats.uma1.fullSpurtRate.toFixed(1)}%</span>
+									<div style={{ marginBottom: '2px', display: 'flex', justifyContent: 'center', gap: '40px' }}>
+										<div style={{ textAlign: 'right', minWidth: '250px' }}>
+											<strong>Uma 1:</strong> Spurt Rate: <span style={{ color: '#2a77c5', fontWeight: 'bold' }}>{staminaStats.uma1.fullSpurtRate.toFixed(1)}%</span>
 										</div>
-										<div style={{textAlign: 'left', minWidth: '250px'}}>
-											<strong>Uma 2:</strong> Spurt Rate: <span style={{color: '#c52a2a', fontWeight: 'bold'}}>{staminaStats.uma2.fullSpurtRate.toFixed(1)}%</span>
+										<div style={{ textAlign: 'left', minWidth: '250px' }}>
+											<strong>Uma 2:</strong> Spurt Rate: <span style={{ color: '#c52a2a', fontWeight: 'bold' }}>{staminaStats.uma2.fullSpurtRate.toFixed(1)}%</span>
 										</div>
 									</div>
-									<div style={{marginBottom: '2px', display: 'flex', justifyContent: 'center', gap: '40px'}}>
-										<div style={{textAlign: 'right', minWidth: '250px'}}>
-											<strong>Uma 1:</strong> Survival Rate: <span style={{color: '#2a77c5', fontWeight: 'bold'}}>{staminaStats.uma1.staminaSurvivalRate.toFixed(1)}%</span>
+									<div style={{ marginBottom: '2px', display: 'flex', justifyContent: 'center', gap: '40px' }}>
+										<div style={{ textAlign: 'right', minWidth: '250px' }}>
+											<strong>Uma 1:</strong> Survival Rate: <span style={{ color: '#2a77c5', fontWeight: 'bold' }}>{staminaStats.uma1.staminaSurvivalRate.toFixed(1)}%</span>
 										</div>
-										<div style={{textAlign: 'left', minWidth: '250px'}}>
-											<strong>Uma 2:</strong> Survival Rate: <span style={{color: '#c52a2a', fontWeight: 'bold'}}>{staminaStats.uma2.staminaSurvivalRate.toFixed(1)}%</span>
+										<div style={{ textAlign: 'left', minWidth: '250px' }}>
+											<strong>Uma 2:</strong> Survival Rate: <span style={{ color: '#c52a2a', fontWeight: 'bold' }}>{staminaStats.uma2.staminaSurvivalRate.toFixed(1)}%</span>
 										</div>
 									</div>
 								</>
 							)}
 						</div>
 					)}
-					
+
 					<Histogram width={500} height={333} data={results} />
 				</div>
 				<div id="infoTables">
 					<table>
 						<caption style="color:#2a77c5">Umamusume 1</caption>
 						<tbody>
-							<tr><th>Time to finish</th><td>{formatTime(chartData.t[0][chartData.t[0].length-1] * 1.18)}</td></tr>
+							<tr><th>Time to finish</th><td>{formatTime(chartData.t[0][chartData.t[0].length - 1] * 1.18)}</td></tr>
 							<tr><th>Start delay</th><td>{chartData.sdly[0].toFixed(4) + ' s'}</td></tr>
-							<tr><th>Top speed</th><td>{chartData.v[0].reduce((a,b) => Math.max(a,b), 0).toFixed(2) + ' m/s'}</td></tr>
+							<tr><th>Top speed</th><td>{chartData.v[0].reduce((a, b) => Math.max(a, b), 0).toFixed(2) + ' m/s'}</td></tr>
 							{rushedStats && allowRushedUma2 && (
 								<tr><th>Rushed frequency</th><td>{rushedStats.uma1.frequency > 0 ? `${rushedStats.uma1.frequency.toFixed(1)}% (${rushedStats.uma1.mean.toFixed(1)}m)` : '0%'}</td></tr>
 							)}
@@ -1446,7 +1538,7 @@ function App(props) {
 						</tbody>
 						{chartData.sk[0].size > 0 &&
 							<tbody>
-								{Array.from(chartData.sk[0].entries()).map(([id,ars]) => ars.flatMap(pos =>
+								{Array.from(chartData.sk[0].entries()).map(([id, ars]) => ars.flatMap(pos =>
 									<tr>
 										<th>{skillnames[id][0]}</th>
 										<td>{`${pos[0].toFixed(2)} m – ${pos[1].toFixed(2)} m`}</td>
@@ -1456,9 +1548,9 @@ function App(props) {
 					<table>
 						<caption style="color:#c52a2a">Umamusume 2</caption>
 						<tbody>
-							<tr><th>Time to finish</th><td>{formatTime(chartData.t[1][chartData.t[1].length-1] * 1.18)}</td></tr>
+							<tr><th>Time to finish</th><td>{formatTime(chartData.t[1][chartData.t[1].length - 1] * 1.18)}</td></tr>
 							<tr><th>Start delay</th><td>{chartData.sdly[1].toFixed(4) + ' s'}</td></tr>
-							<tr><th>Top speed</th><td>{chartData.v[1].reduce((a,b) => Math.max(a,b), 0).toFixed(2) + ' m/s'}</td></tr>
+							<tr><th>Top speed</th><td>{chartData.v[1].reduce((a, b) => Math.max(a, b), 0).toFixed(2) + ' m/s'}</td></tr>
 							{rushedStats && allowRushedUma2 && (
 								<tr><th>Rushed frequency</th><td>{rushedStats.uma2.frequency > 0 ? `${rushedStats.uma2.frequency.toFixed(1)}% (${rushedStats.uma2.mean.toFixed(1)}m)` : '0%'}</td></tr>
 							)}
@@ -1468,7 +1560,7 @@ function App(props) {
 						</tbody>
 						{chartData.sk[1].size > 0 &&
 							<tbody>
-								{Array.from(chartData.sk[1].entries()).map(([id,ars]) => ars.flatMap(pos =>
+								{Array.from(chartData.sk[1].entries()).map(([id, ars]) => ars.flatMap(pos =>
 									<tr>
 										<th>{skillnames[id][0]}</th>
 										<td>{`${pos[0].toFixed(2)} m – ${pos[1].toFixed(2)} m`}</td>
@@ -1521,7 +1613,7 @@ function App(props) {
 				<div id="topPane" class={chartData ? 'hasResults' : ''}>
 					<RaceTrack courseid={courseId} width={960} height={240} xOffset={20} yOffset={15} yExtra={20} mouseMove={rtMouseMove} mouseLeave={rtMouseLeave} onSkillDrag={handleSkillDrag} regions={[...skillActivations, ...rushedIndicators]} posKeepLabels={posKeepLabels} uma1={uma1} uma2={uma2} pacer={pacer}>
 						<VelocityLines data={chartData} courseDistance={course.distance} width={960} height={250} xOffset={20} showHp={showHp} showLanes={showLanes} horseLane={course.horseLane} showVirtualPacemaker={showVirtualPacemakerOnGraph && posKeepMode === PosKeepMode.Virtual} selectedPacemakers={getSelectedPacemakers()} />
-						
+
 						<g id="rtMouseOverBox" style="display:none">
 							<text id="rtV1" x="25" y="10" fill="#2a77c5" font-size="10px"></text>
 							<text id="rtV2" x="25" y="20" fill="#c52a2a" font-size="10px"></text>
@@ -1548,13 +1640,13 @@ function App(props) {
 						</fieldset>
 						{
 							mode == Mode.Compare
-							? <button id="run" onClick={doComparison} tabindex={1} disabled={isSimulationRunning}>COMPARE</button>
-							: <button id="run" onClick={doBasinnChart} tabindex={1} disabled={isSimulationRunning}>RUN</button>
+								? <button id="run" onClick={doComparison} tabindex={1} disabled={isSimulationRunning}>COMPARE</button>
+								: <button id="run" onClick={doBasinnChart} tabindex={1} disabled={isSimulationRunning}>RUN</button>
 						}
 						{
 							mode == Mode.Compare
-							? <button id="runOnce" onClick={doRunOnce} tabindex={1} disabled={isSimulationRunning}>Run Once</button>
-							: null
+								? <button id="runOnce" onClick={doRunOnce} tabindex={1} disabled={isSimulationRunning}>Run Once</button>
+								: null
 						}
 						<label for="nsamples">Samples:</label>
 						<input type="number" id="nsamples" min="1" max="10000" value={nsamples} onInput={(e) => setSamples(+e.currentTarget.value)} />
@@ -1580,17 +1672,17 @@ function App(props) {
 									<div>
 										<label>Show Pacemakers:</label>
 										<div className="pacemaker-combobox">
-											<button 
+											<button
 												className="pacemaker-combobox-button"
 												onClick={() => setIsPacemakerDropdownOpen(!isPacemakerDropdownOpen)}
 											>
 												{selectedPacemakerIndices.length === 0
 													? 'None'
-													: selectedPacemakerIndices.length === 1 
-													? `Pacemaker ${selectedPacemakerIndices[0] + 1}`
-													: selectedPacemakerIndices.length === pacemakerCount
-													? 'All Pacemakers'
-													: `${selectedPacemakerIndices.length} Pacemakers`
+													: selectedPacemakerIndices.length === 1
+														? `Pacemaker ${selectedPacemakerIndices[0] + 1}`
+														: selectedPacemakerIndices.length === pacemakerCount
+															? 'All Pacemakers'
+															: `${selectedPacemakerIndices.length} Pacemakers`
 												}
 												<span className="pacemaker-combobox-arrow">▼</span>
 											</button>
@@ -1598,12 +1690,12 @@ function App(props) {
 												<div className="pacemaker-combobox-dropdown">
 													{[...Array(pacemakerCount)].map((_, index) => (
 														<label key={index} className="pacemaker-combobox-option">
-															<input 
-																type="checkbox" 
+															<input
+																type="checkbox"
 																checked={selectedPacemakerIndices.includes(index)}
 																onChange={() => togglePacemakerSelection(index)}
 															/>
-															<span style={{color: index === 0 ? '#22c55e' : index === 1 ? '#a855f7' : '#ec4899'}}>
+															<span style={{ color: index === 0 ? '#22c55e' : index === 1 ? '#a855f7' : '#ec4899' }}>
 																Pacemaker {index + 1}
 															</span>
 														</label>
@@ -1614,13 +1706,13 @@ function App(props) {
 									</div>
 									<div id="pacemakerCountControl">
 										<label for="pacemakercount">Number of pacemakers: {pacemakerCount}</label>
-										<input 
-											type="range" 
-											id="pacemakercount" 
-											min="1" 
-											max="3" 
-											value={pacemakerCount} 
-											onInput={(e) => handlePacemakerCountChange(+e.currentTarget.value)} 
+										<input
+											type="range"
+											id="pacemakercount"
+											min="1"
+											max="3"
+											value={pacemakerCount}
+											onInput={(e) => handlePacemakerCountChange(+e.currentTarget.value)}
 										/>
 									</div>
 								</div>
@@ -1637,8 +1729,8 @@ function App(props) {
 						<div>
 							<label for="simWitVariance">Wit Variance</label>
 							<input type="checkbox" id="simWitVariance" checked={simWitVariance} onClick={handleSimWitVarianceToggle} />
-							<button 
-								className="wit-variance-settings-btn" 
+							<button
+								className="wit-variance-settings-btn"
 								onClick={() => setShowWitVarianceSettings(true)}
 								title="Configure Wit Variance settings"
 								disabled={!simWitVariance}
@@ -1691,7 +1783,7 @@ function App(props) {
 					{expanded && <div id="closeUmaOverlay" title="Close panel" onClick={toggleExpand}>✕</div>}
 				</div>
 				{popoverSkill && <BasinnChartPopover skillid={popoverSkill} results={tableData.get(popoverSkill).results} courseDistance={course.distance} />}
-				<WitVarianceSettingsPopup 
+				<WitVarianceSettingsPopup
 					show={showWitVarianceSettings}
 					onClose={() => setShowWitVarianceSettings(false)}
 					allowRushedUma1={allowRushedUma1}
