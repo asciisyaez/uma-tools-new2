@@ -103,33 +103,6 @@
     display: block;
 }
 
-/* HorseDef Responsive Scaling */
-.modern-layout-container .horseDef {
-    background: transparent !important;
-    border: none !important;
-    width: 100% !important;
-    box-shadow: none !important;
-}
-
-.modern-layout-container .horseParams {
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 10px auto !important;
-    display: grid !important;
-    grid-template-columns: repeat(5, 1fr) !important;
-    gap: 2px;
-}
-
-.modern-layout-container .horseSkillHeader {
-    width: 100% !important;
-    max-width: 100% !important;
-}
-
-.modern-layout-container .horseSkillList {
-    width: 100% !important;
-    max-width: 100% !important;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
-}
 
 /* Oversized Buttons Fix */
 .modern-layout-container .track-conditions img {
@@ -443,65 +416,6 @@
 }
 
 /* Overrides for existing components */
-.modern-layout-container .horseDefHeader {
-    border-radius: 15px !important;
-    margin-bottom: 15px;
-}
-
-.modern-layout-container .horseParams {
-    background: rgba(255,255,255,0.5) !important;
-    border: 1px solid rgba(0,0,0,0.1) !important;
-    border-radius: 12px !important;
-}
-
-.dark .modern-layout-container .horseParams {
-    background: rgba(0,0,0,0.3) !important;
-    border: 1px solid rgba(255,255,255,0.1) !important;
-}
-
-.dark .modern-layout-container .umaSelectInput {
-    color: var(--text-primary) !important;
-}
-
-.modern-layout-container .umaSuggestions {
-    border-radius: 12px;
-    overflow: hidden;
-    background: rgba(255, 255, 255, 0.95);
-}
-
-.modern-layout-container .umaSuggestion {
-    color: var(--text-primary);
-}
-
-.dark .modern-layout-container .umaSuggestions {
-    background: rgba(16, 16, 16, 0.95);
-    border-color: rgba(255, 255, 255, 0.15);
-}
-
-.dark .modern-layout-container .umaSuggestion {
-    background: transparent;
-    color: var(--text-primary);
-}
-
-.dark .modern-layout-container .umaSuggestion:nth-child(even) {
-    background: rgba(255, 255, 255, 0.05);
-}
-
-.dark .modern-layout-container .umaSuggestion.selected,
-.dark .modern-layout-container .umaSuggestion:hover {
-    background: rgba(var(--accent-rgb), 0.35);
-    color: #fff;
-}
-
-.dark .modern-layout-container .horseAptitudeSelect > ul,
-.dark .modern-layout-container .horseMoodSelect > ul {
-    background: rgba(16,16,16,0.95);
-    border-color: rgba(255,255,255,0.15);
-}
-
-.dark .modern-layout-container .horseMoodSelect > ul > li:hover {
-    background: rgba(255,255,255,0.1);
-}
 
 /* --- Dark Mode Color Fixes for Legacy Components --- */
 
@@ -511,31 +425,6 @@
     text-shadow: none !important;
 }
 
-.dark .modern-layout-container .horseParam > input {
-    color: var(--text-primary) !important;
-}
-
-.dark .modern-layout-container .umaEpithet > span,
-.dark .modern-layout-container .umaSelectInput {
-    color: var(--text-primary) !important;
-}
-
-.dark .modern-layout-container .horseAptitudes > div {
-    background: rgba(0,0,0,0.3) !important;
-    color: var(--text-primary) !important;
-    border-color: rgba(255,255,255,0.2) !important;
-}
-
-.dark .modern-layout-container .forcedPositionInput {
-    color: var(--text-primary) !important;
-    background: rgba(0,0,0,0.3) !important;
-    border-color: rgba(255,255,255,0.2) !important;
-}
-
-.dark .modern-layout-container .forcedPositionLabel {
-    color: var(--text-primary) !important;
-    background: rgba(255,255,255,0.1) !important;
-}
 
 .dark .modern-layout-container .umaTab {
     background: rgba(255,255,255,0.05) !important;

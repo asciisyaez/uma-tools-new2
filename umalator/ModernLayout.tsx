@@ -1,7 +1,7 @@
 import { h, Fragment } from 'preact';
 import { IntlProvider } from 'preact-i18n';
 import { RaceTrack, TrackSelect } from '../components/RaceTrack';
-import { HorseDef, horseDefTabs } from '../components/HorseDef';
+import { ModernHorseDef as HorseDef, horseDefTabs } from '../components/ModernHorseDef';
 import { Language } from '../components/Language';
 import {
     TimeOfDaySelect,
