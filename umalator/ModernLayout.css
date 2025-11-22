@@ -31,11 +31,10 @@
 
 /* Layout Structure: Side-by-Side Priority */
 .main-content-row {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
     gap: 20px;
-    justify-content: center;
-    align-items: stretch;
+    align-items: start;
     width: 100%;
 }
 
@@ -48,19 +47,17 @@
 }
 
 .uma-column {
-    flex: 1 1 420px;
     order: 1;
 }
 
 .track-column {
-    flex: 1.4 1 540px;
     order: 2;
 }
 
 .glass-panel.track-panel {
     width: 100%;
     min-width: 0; /* Allow shrinking below content size (crucial for SVG scaling) */
-    overflow-x: hidden; /* Let SVG scale instead of scroll */
+    overflow-x: auto; /* Allow horizontal scroll instead of overlapping */
 }
 
 .track-column .glass-panel,
@@ -327,18 +324,13 @@
 }
 
 /* Mobile Responsive Breakdown */
-@media (max-width: 950px) {
+@media (max-width: 1200px) {
     .main-content-row {
-        flex-direction: column;
+        grid-template-columns: 1fr;
     }
-    
-    .uma-column,
-    .track-column {
-        order: 0;
-        flex: 1 1 auto;
-        width: 100%;
-    }
-    
+}
+
+@media (max-width: 950px) {
     .track-panel {
         overflow-x: auto; /* Scroll track on mobile */
     }

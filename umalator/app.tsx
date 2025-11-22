@@ -41,6 +41,8 @@ function skillmeta(id: string) {
 
 import './app.css';
 
+const baseSkillsToTest = Object.keys(skilldata).filter(id => skilldata[id].rarity < 3);
+
 const DEFAULT_SAMPLES = 500;
 const DEFAULT_SEED = 2615953739;
 
