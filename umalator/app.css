@@ -20,6 +20,12 @@ body {
 	height: 98vh;
 }
 
+#app > .app-container {
+	grid-column: 1 / -1;
+	width: 100%;
+	justify-self: stretch;
+}
+
 #posKeepFieldset {
 	border: 1px solid rgb(148, 150, 189);
 	border-radius: 8px;

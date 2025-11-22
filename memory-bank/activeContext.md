@@ -24,6 +24,7 @@
     - Regenerated both `umalator` and `umalator-global` bundles so GitHub Pages (umalator-global) reflects the new styling.
     - Restored the Skill Chart helper list (`baseSkillsToTest`) so running Skill Chart no longer throws at runtime.
     - Converted the Modern layout’s main row to a responsive CSS grid to eliminate residual overlap between the Uma and Track panels.
+- **Layout Fix**: Ensured `.app-container` spans the entire `#app` grid so the Modern layout can use the full browser width on `umalator-global`.
 - **Build**: Updated `umalator-global` by running the build script.
 - **Deployment**: Pushed changes to GitHub.
 
