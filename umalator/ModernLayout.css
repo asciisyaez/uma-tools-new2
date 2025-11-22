@@ -49,13 +49,16 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-    min-width: 0;
-    /* Remove flex properties that caused overlap */
+    /* Removing min-width: 0 to prevent overlap issues reported by user */
 }
 
 .uma-column {
     /* Width controlled by grid */
     box-sizing: border-box;
+    /* Explicitly remove any flex constraints that might linger */
+    flex: none; 
+    min-width: auto;
+    max-width: none;
 }
 
 .track-column {
