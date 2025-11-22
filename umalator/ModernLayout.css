@@ -515,6 +515,6 @@
     border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-.dark text {
+.dark text:not(.racetrackView *) {
     fill: #e0e0e0;
 }
