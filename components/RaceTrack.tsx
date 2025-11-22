@@ -475,9 +475,9 @@ export function RaceTrack(props) {
 
 	return (
 		<IntlProvider definition={lang == 'ja' ? STRINGS_ja : STRINGS_en}>
-			<div class="racetrackWrapper" style={`width:${totalWidth}px; max-width: 100%`}>
+			<div class="racetrackWrapper" style={{width: '100%', maxWidth: '100%'}}>
 				{trackNameHeader}
-				<svg version="1.1" width={totalWidth} height={totalHeight} viewBox={`0 0 ${totalWidth} ${totalHeight}`} preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" class="racetrackView" data-courseid={props.courseid} onMouseMove={doMouseMove} onMouseLeave={doMouseLeave} 				onMouseUp={() => setDraggedSkill(null)}>
+				<svg version="1.1" viewBox={`0 0 ${totalWidth} ${totalHeight}`} preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" class="racetrackView" data-courseid={props.courseid} onMouseMove={doMouseMove} onMouseLeave={doMouseLeave} 				onMouseUp={() => setDraggedSkill(null)}>
 					<svg x={props.xOffset} y={props.yOffset} width={props.width} height={props.height}>
 						{almostEverything}
 						{regions}

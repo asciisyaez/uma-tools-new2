@@ -5,13 +5,11 @@
     gap: 20px;
     padding: 20px;
     width: 100%;
-    /* Span full available width */
+    max-width: 1600px;
     margin: 0 auto;
     color: var(--text-primary);
     box-sizing: border-box;
-    /* Ensure padding is included in width */
-    overflow-x: auto;
-    /* Allow horizontal scroll if needed instead of cutting off */
+    overflow-x: hidden;
 }
 
 /* Glass Panel Base */
