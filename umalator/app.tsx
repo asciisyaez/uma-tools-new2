@@ -759,7 +759,7 @@ export function WitVarianceSettingsPopup({
 
 function App(props) {
 	const [darkMode, toggleDarkMode] = useReducer(b => !b, false);
-    const [viewMode, setViewMode] = useState<'classic' | 'modern'>('classic'); // Default to classic
+	const [viewMode, setViewMode] = useState<'classic' | 'modern'>('modern'); // Default to modern
 	const [skillsOpen, setSkillsOpen] = useState(false);
 	const [racedef, setRaceDef] = useState(() => DEFAULT_PRESET.racedef);
 	const [nsamples, setSamples] = useState(DEFAULT_SAMPLES);
@@ -1439,7 +1439,7 @@ function App(props) {
 		posKeepLabels.push(currentLabel);
 	}
 
-    let resultsPane = null;
+	let resultsPane = null;
 	if (mode == Mode.Compare && results.length > 0) {
 		resultsPane = (
 			<div id="resultsPaneWrapper">
@@ -1581,42 +1581,42 @@ function App(props) {
 		);
 	}
 
-    const commonProps: LayoutProps = {
-        lang: props.lang,
-        strings,
-        courseId, setCourseId, course, chartData, rtMouseMove, rtMouseLeave, handleSkillDrag,
-        skillActivations, rushedIndicators, posKeepLabels, uma1, setUma1, uma2, setUma2, pacer, setPacer,
-        resetAllUmas, copyUmaToRight, copyUmaToLeft, swapUmas, racedef, racesetter, setRaceDef,
-        mode, updateUiState, isSimulationRunning, doComparison, doBasinnChart, doRunOnce,
-        nsamples, setSamples, seed, setSeed, setRunOnceCounter, posKeepMode, setPosKeepMode, copyStateUrl,
-        showHp, toggleShowHp, showLanes, toggleShowLanes, showVirtualPacemakerOnGraph,
-        pacemakerCount, handlePacemakerCountChange, selectedPacemakerIndices, togglePacemakerSelection,
-        isPacemakerDropdownOpen, setIsPacemakerDropdownOpen, getSelectedPacemakers,
-        simWitVariance, handleSimWitVarianceToggle, showWitVarianceSettings, setShowWitVarianceSettings,
-        witVarianceProps: {
-            allowRushedUma1, allowRushedUma2, allowDownhillUma1, allowDownhillUma2,
-            allowSectionModifierUma1, allowSectionModifierUma2, allowSkillCheckChanceUma1, allowSkillCheckChanceUma2,
-            toggleRushedUma1, toggleRushedUma2, toggleDownhillUma1, toggleDownhillUma2,
-            toggleSectionModifierUma1, toggleSectionModifierUma2, toggleSkillCheckChanceUma1, toggleSkillCheckChanceUma2
-        },
-        expanded, toggleExpand, currentIdx, resultsContent: resultsPane, popoverSkill, tableData
-    };
+	const commonProps: LayoutProps = {
+		lang: props.lang,
+		strings,
+		courseId, setCourseId, course, chartData, rtMouseMove, rtMouseLeave, handleSkillDrag,
+		skillActivations, rushedIndicators, posKeepLabels, uma1, setUma1, uma2, setUma2, pacer, setPacer,
+		resetAllUmas, copyUmaToRight, copyUmaToLeft, swapUmas, racedef, racesetter, setRaceDef,
+		mode, updateUiState, isSimulationRunning, doComparison, doBasinnChart, doRunOnce,
+		nsamples, setSamples, seed, setSeed, setRunOnceCounter, posKeepMode, setPosKeepMode, copyStateUrl,
+		showHp, toggleShowHp, showLanes, toggleShowLanes, showVirtualPacemakerOnGraph,
+		pacemakerCount, handlePacemakerCountChange, selectedPacemakerIndices, togglePacemakerSelection,
+		isPacemakerDropdownOpen, setIsPacemakerDropdownOpen, getSelectedPacemakers,
+		simWitVariance, handleSimWitVarianceToggle, showWitVarianceSettings, setShowWitVarianceSettings,
+		witVarianceProps: {
+			allowRushedUma1, allowRushedUma2, allowDownhillUma1, allowDownhillUma2,
+			allowSectionModifierUma1, allowSectionModifierUma2, allowSkillCheckChanceUma1, allowSkillCheckChanceUma2,
+			toggleRushedUma1, toggleRushedUma2, toggleDownhillUma1, toggleDownhillUma2,
+			toggleSectionModifierUma1, toggleSectionModifierUma2, toggleSkillCheckChanceUma1, toggleSkillCheckChanceUma2
+		},
+		expanded, toggleExpand, currentIdx, resultsContent: resultsPane, popoverSkill, tableData
+	};
 
-    return (
-        <div className={`app-container ${viewMode}`}>
-            <div className="view-controls" style={{ position: 'fixed', top: 10, right: 10, zIndex: 10000, display: 'flex', gap: 10 }}>
-                <button onClick={() => setViewMode(viewMode === 'classic' ? 'modern' : 'classic')} 
-                        style={{ padding: '8px 16px', borderRadius: 20, border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', cursor: 'pointer', backdropFilter: 'blur(5px)' }}>
-                    {viewMode === 'classic' ? 'Switch to Modern View' : 'Switch to Classic View'}
-                </button>
-                <button onClick={toggleDarkMode}
-                        style={{ padding: '8px', borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', cursor: 'pointer', backdropFilter: 'blur(5px)' }}>
-                    {darkMode ? '☀️' : '🌙'}
-                </button>
-            </div>
-            {viewMode === 'classic' ? <ClassicLayout {...commonProps} /> : <ModernLayout {...commonProps} />}
-        </div>
-    );
+	return (
+		<div className={`app-container ${viewMode}`}>
+			<div className="view-controls" style={{ position: 'fixed', top: 10, right: 10, zIndex: 10000, display: 'flex', gap: 10 }}>
+				<button onClick={() => setViewMode(viewMode === 'classic' ? 'modern' : 'classic')}
+					style={{ padding: '8px 16px', borderRadius: 20, border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', cursor: 'pointer', backdropFilter: 'blur(5px)' }}>
+					{viewMode === 'classic' ? 'Switch to Modern View' : 'Switch to Classic View'}
+				</button>
+				<button onClick={toggleDarkMode}
+					style={{ padding: '8px', borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', cursor: 'pointer', backdropFilter: 'blur(5px)' }}>
+					{darkMode ? '☀️' : '🌙'}
+				</button>
+			</div>
+			{viewMode === 'classic' ? <ClassicLayout {...commonProps} /> : <ModernLayout {...commonProps} />}
+		</div>
+	);
 }
 
 initTelemetry();
