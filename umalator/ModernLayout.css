@@ -35,16 +35,26 @@
     flex-wrap: wrap;
     gap: 20px;
     justify-content: center;
-    align-items: flex-start;
+    align-items: stretch;
     width: 100%;
 }
 
+.uma-column,
 .track-column {
     display: flex;
     flex-direction: column;
     gap: 20px;
-    flex: 1.37 1 500px;
     min-width: 0;
+}
+
+.uma-column {
+    flex: 1 1 420px;
+    order: 1;
+}
+
+.track-column {
+    flex: 1.4 1 540px;
+    order: 2;
 }
 
 .glass-panel.track-panel {
@@ -53,14 +63,20 @@
     overflow-x: hidden; /* Let SVG scale instead of scroll */
 }
 
+.track-column .glass-panel,
+.uma-column .glass-panel {
+    width: 100%;
+}
+
 .glass-panel.uma-panel {
     /* Flex Logic: Grow proportional to ideal size (700), Shrink allowed */
-    flex: 1 1 400px;
+    flex: 1 1 auto;
     min-width: 0;
 }
 
 .results-pane {
     width: 100%;
+    margin-top: 0;
 }
 
 /* Controls Panel */
@@ -316,8 +332,9 @@
         flex-direction: column;
     }
     
-    .track-column,
-    .glass-panel.uma-panel {
+    .uma-column,
+    .track-column {
+        order: 0;
         flex: 1 1 auto;
         width: 100%;
     }

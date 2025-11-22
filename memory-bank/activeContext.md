@@ -19,6 +19,9 @@
 - **Modern Polish**:
     - Track + Uma panels now live inside a shared `main-content-row` so they stay side-by-side on desktop while stacking gracefully on mobile.
     - Dark Mode dropdowns (track select, course select, Uma suggestions, aptitude/mood pickers) gained readable backgrounds and option colors.
+- **Follow-up Tweaks**:
+    - Re-ordered the Modern layout so the Umamusume panel sits on the left and the track/controls/results sit on the right with responsive ordering on mobile.
+    - Regenerated both `umalator` and `umalator-global` bundles so GitHub Pages (umalator-global) reflects the new styling.
 - **Build**: Updated `umalator-global` by running the build script.
 - **Deployment**: Pushed changes to GitHub.
 

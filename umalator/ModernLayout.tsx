@@ -51,6 +51,40 @@ export function ModernLayout(props: LayoutProps) {
             <IntlProvider definition={strings}>
                 <div className="modern-layout-container">
                     <div className="main-content-row">
+                        <div className="uma-column">
+                            <div className="glass-panel uma-panel">
+                                <div className={!expanded && currentIdx == 0 ? 'selected-tab-content' : 'hidden-tab-content'}>
+                                    <HorseDef key={uma1.outfitId} state={uma1} setState={setUma1} courseDistance={course.distance} tabstart={() => 4} onResetAll={resetAllUmas}>
+                                        {expanded ? 'Umamusume 1' : umaTabs}
+                                    </HorseDef>
+                                </div>
+                                
+                                {expanded && (
+                                    <div className="uma-copy-controls">
+                                        <button className="glass-button icon-only" title="Copy uma 1 to uma 2" onClick={copyUmaToRight}>→</button>
+                                        <button className="glass-button icon-only" title="Copy uma 2 to uma 1" onClick={copyUmaToLeft}>←</button>
+                                        <button className="glass-button icon-only" title="Swap umas" onClick={swapUmas}>⮂</button>
+                                    </div>
+                                )}
+
+                                {mode == Mode.Compare && (
+                                    <div className={!expanded && currentIdx == 1 ? 'selected-tab-content' : 'hidden-tab-content'}>
+                                        <HorseDef key={uma2.outfitId} state={uma2} setState={setUma2} courseDistance={course.distance} tabstart={() => 4 + horseDefTabs()} onResetAll={resetAllUmas}>
+                                            {expanded ? 'Umamusume 2' : umaTabs}
+                                        </HorseDef>
+                                    </div>
+                                )}
+
+                                {posKeepMode == 2 && (
+                                    <div className={!expanded && currentIdx == 2 ? 'selected-tab-content' : 'hidden-tab-content'}>
+                                        <HorseDef key={pacer.outfitId} state={pacer} setState={setPacer} courseDistance={course.distance} tabstart={() => 4 + (mode == Mode.Compare ? 2 : 1) * horseDefTabs()} onResetAll={resetAllUmas}>
+                                            {expanded ? 'Virtual Pacemaker' : umaTabs}
+                                        </HorseDef>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
                         <div className="track-column">
                             <div className="glass-panel track-panel">
                                 <RaceTrack courseid={courseId} width={960} height={240} xOffset={20} yOffset={15} yExtra={20} mouseMove={rtMouseMove} mouseLeave={rtMouseLeave} onSkillDrag={handleSkillDrag} regions={[...skillActivations, ...rushedIndicators]} posKeepLabels={posKeepLabels} uma1={uma1} uma2={uma2} pacer={pacer}>
@@ -190,38 +224,6 @@ export function ModernLayout(props: LayoutProps) {
                             {resultsContent && (
                                 <div className="glass-panel results-pane">
                                     {resultsContent}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="glass-panel uma-panel">
-                            <div className={!expanded && currentIdx == 0 ? 'selected-tab-content' : 'hidden-tab-content'}>
-                                <HorseDef key={uma1.outfitId} state={uma1} setState={setUma1} courseDistance={course.distance} tabstart={() => 4} onResetAll={resetAllUmas}>
-                                    {expanded ? 'Umamusume 1' : umaTabs}
-                                </HorseDef>
-                            </div>
-                            
-                            {expanded && (
-                                <div className="uma-copy-controls">
-                                    <button className="glass-button icon-only" title="Copy uma 1 to uma 2" onClick={copyUmaToRight}>→</button>
-                                    <button className="glass-button icon-only" title="Copy uma 2 to uma 1" onClick={copyUmaToLeft}>←</button>
-                                    <button className="glass-button icon-only" title="Swap umas" onClick={swapUmas}>⮂</button>
-                                </div>
-                            )}
-
-                            {mode == Mode.Compare && (
-                                <div className={!expanded && currentIdx == 1 ? 'selected-tab-content' : 'hidden-tab-content'}>
-                                    <HorseDef key={uma2.outfitId} state={uma2} setState={setUma2} courseDistance={course.distance} tabstart={() => 4 + horseDefTabs()} onResetAll={resetAllUmas}>
-                                        {expanded ? 'Umamusume 2' : umaTabs}
-                                    </HorseDef>
-                                </div>
-                            )}
-
-                            {posKeepMode == 2 && (
-                                <div className={!expanded && currentIdx == 2 ? 'selected-tab-content' : 'hidden-tab-content'}>
-                                    <HorseDef key={pacer.outfitId} state={pacer} setState={setPacer} courseDistance={course.distance} tabstart={() => 4 + (mode == Mode.Compare ? 2 : 1) * horseDefTabs()} onResetAll={resetAllUmas}>
-                                        {expanded ? 'Virtual Pacemaker' : umaTabs}
-                                    </HorseDef>
                                 </div>
                             )}
                         </div>
