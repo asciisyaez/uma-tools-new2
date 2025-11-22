@@ -4,10 +4,13 @@
     flex-direction: column;
     gap: 20px;
     padding: 20px;
-    max-width: 100vw; /* Allow full width */
+    max-width: 100vw;
     margin: 0 auto;
     color: var(--text-primary);
-    overflow-x: hidden;
+    box-sizing: border-box;
+    /* Ensure padding is included in width */
+    overflow-x: auto;
+    /* Allow horizontal scroll if needed instead of cutting off */
 }
 
 /* Glass Panel Base */
@@ -16,7 +19,8 @@
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: 20px;
-    border: none; /* Removed border for seamless transition */
+    border: none;
+    /* Removed border for seamless transition */
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
     padding: 20px;
     transition: all 0.3s ease;
@@ -25,7 +29,8 @@
 /* Dark Mode Glass */
 .dark .glass-panel {
     background: rgba(30, 30, 30, 0.6);
-    border: none; /* Removed border */
+    border: none;
+    /* Removed border */
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
@@ -36,6 +41,9 @@
     gap: 20px;
     align-items: flex-start;
     width: 100%;
+    box-sizing: border-box;
+    min-width: 0;
+    /* Allow shrinking */
 }
 
 .uma-column,
@@ -48,24 +56,31 @@
 
 .uma-column {
     order: 1;
-    flex: 1 1 360px;
-    min-width: 320px;
-    max-width: 480px;
-    flex-shrink: 1; /* Allow shrinking to prevent overlap */
+    flex: 0 1 400px;
+    /* Don't grow, allow shrink, ideal 400px */
+    min-width: 300px;
+    /* Reduced to allow more flexibility */
+    max-width: 450px;
+    /* Slightly reduced */
+    box-sizing: border-box;
 }
 
 .track-column {
     order: 2;
-    flex: 2 1 640px;
-    min-width: 480px; /* Reduced from 520px to prevent overlap */
+    flex: 1 1 auto;
+    /* Grow to fill space, allow shrink */
+    min-width: 0;
+    /* Remove min-width to prevent overflow */
     max-width: 100%;
-    flex-shrink: 1; /* Allow shrinking to prevent overlap */
+    box-sizing: border-box;
 }
 
 .glass-panel.track-panel {
     width: 100%;
-    min-width: 0; /* Allow shrinking below content size (crucial for SVG scaling) */
-    overflow-x: auto; /* Allow horizontal scroll instead of overlapping */
+    min-width: 0;
+    /* Allow shrinking below content size (crucial for SVG scaling) */
+    overflow-x: auto;
+    /* Allow horizontal scroll instead of overlapping */
 }
 
 .track-column .glass-panel,
@@ -190,7 +205,7 @@
     color: var(--text-primary);
 }
 
-.modern-layout-container .trackSelect > select {
+.modern-layout-container .trackSelect>select {
     border-radius: 10px !important;
     border: 1px solid rgba(0, 0, 0, 0.15) !important;
     padding: 8px 12px !important;
@@ -199,12 +214,13 @@
     margin-bottom: 8px;
 }
 
-.dark .modern-layout-container .trackSelect > select {
+.dark .modern-layout-container .trackSelect>select {
     background: rgba(0, 0, 0, 0.45) !important;
     border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
-.glass-input, .glass-select {
+.glass-input,
+.glass-select {
     width: 100%;
     padding: 8px 12px;
     border-radius: 10px;
@@ -215,13 +231,15 @@
     transition: all 0.2s;
 }
 
-.dark .glass-input, .dark .glass-select {
+.dark .glass-input,
+.dark .glass-select {
     background: rgba(0, 0, 0, 0.3);
     border-color: rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
 }
 
-.glass-input:focus, .glass-select:focus {
+.glass-input:focus,
+.glass-select:focus {
     outline: none;
     border-color: var(--accent-color);
     background: rgba(255, 255, 255, 0.8);
@@ -320,9 +338,10 @@
 
 @media (max-width: 950px) {
     .track-panel {
-        overflow-x: auto; /* Scroll track on mobile */
+        overflow-x: auto;
+        /* Scroll track on mobile */
     }
-    
+
     .controls-grid {
         grid-template-columns: 1fr;
     }
@@ -402,11 +421,11 @@
     align-items: center;
     margin-top: 10px;
     padding-top: 10px;
-    border-top: 1px solid rgba(0,0,0,0.1);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .dark .meta-actions {
-    border-top-color: rgba(255,255,255,0.1);
+    border-top-color: rgba(255, 255, 255, 0.1);
 }
 
 .text-button {
@@ -429,9 +448,9 @@
 
 
 .dark .modern-layout-container .umaTab {
-    background: rgba(255,255,255,0.05) !important;
+    background: rgba(255, 255, 255, 0.05) !important;
     color: var(--text-secondary) !important;
-    outline-color: rgba(255,255,255,0.1) !important;
+    outline-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 .dark .modern-layout-container .umaTab.selected {
@@ -449,9 +468,9 @@
 }
 
 .dark .modern-layout-container .pacemaker-combobox-button {
-    background: rgba(0,0,0,0.3) !important;
+    background: rgba(0, 0, 0, 0.3) !important;
     color: var(--text-primary) !important;
-    border-color: rgba(255,255,255,0.1) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 .dark text {
