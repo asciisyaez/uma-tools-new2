@@ -129,14 +129,7 @@ function buildGlobalPresetRecords(records: ChampionMeetingRecord[]) {
 	}));
 }
 
-const presetSources = (CC_GLOBAL ? buildGlobalPresetRecords(championsMeetings as ChampionMeetingRecord[]) : [
-	{ type: EventType.LOH, date: '2025-11', courseId: 11502, season: Season.Autumn, time: Time.Midday },
-	{ type: EventType.CM, date: '2025-10', courseId: 10302, season: Season.Autumn, ground: GroundCondition.Good, weather: Weather.Cloudy, time: Time.Midday },
-	{ type: EventType.CM, date: '2025-09-22', courseId: 10807, season: Season.Autumn, ground: GroundCondition.Good, weather: Weather.Sunny, time: Time.Midday },
-	{ type: EventType.LOH, date: '2025-08', courseId: 10105, season: Season.Summer, time: Time.Midday },
-	{ type: EventType.CM, date: '2025-07-25', courseId: 10906, ground: GroundCondition.Yielding, weather: Weather.Cloudy, season: Season.Summer, time: Time.Midday },
-	{ type: EventType.CM, date: '2025-06-21', courseId: 10606, ground: GroundCondition.Good, weather: Weather.Sunny, season: Season.Spring, time: Time.Midday }
-]);
+const presetSources = buildGlobalPresetRecords(championsMeetings as ChampionMeetingRecord[]);
 
 const presets = presetSources
 	.map(def => {
@@ -203,7 +196,7 @@ function TimeOfDaySelect(props) {
 	return (
 		<div class="timeofdaySelect" onClick={click}>
 			{Array(3).fill(0).map((_, i) =>
-				<img src={`/uma-tools/icons/utx_ico_timezone_0${i}.png`} title={SKILL_STRINGS_en.skilldetails.time[i + 2]}
+				<img src={`/uma-tools-new2/icons/utx_ico_timezone_0${i}.png`} title={SKILL_STRINGS_en.skilldetails.time[i + 2]}
 					class={i + 2 == props.value ? 'selected' : ''} data-timeofday={i + 2} />)}
 		</div>
 	);
@@ -239,7 +232,7 @@ function WeatherSelect(props) {
 	return (
 		<div class="weatherSelect" onClick={click}>
 			{Array(4).fill(0).map((_, i) =>
-				<img src={`/uma-tools/icons/utx_ico_weather_0${i}.png`} title={SKILL_STRINGS_en.skilldetails.weather[i + 1]}
+				<img src={`/uma-tools-new2/icons/utx_ico_weather_0${i}.png`} title={SKILL_STRINGS_en.skilldetails.weather[i + 1]}
 					class={i + 1 == props.value ? 'selected' : ''} data-weather={i + 1} />)}
 		</div>
 	);
@@ -254,7 +247,7 @@ function SeasonSelect(props) {
 	return (
 		<div class="seasonSelect" onClick={click}>
 			{Array(4 + +!CC_GLOBAL /* global doenst have late spring for some reason */).fill(0).map((_, i) =>
-				<img src={`/uma-tools/icons${CC_GLOBAL ? '/global' : ''}/utx_txt_season_0${i}.png`} title={SKILL_STRINGS_en.skilldetails.season[i + 1]}
+				<img src={`/uma-tools-new2/icons${CC_GLOBAL ? '/global' : ''}/utx_txt_season_0${i}.png`} title={SKILL_STRINGS_en.skilldetails.season[i + 1]}
 					class={i + 1 == props.value ? 'selected' : ''} data-season={i + 1} />)}
 		</div>
 	);
