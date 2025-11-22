@@ -51,13 +51,15 @@
     flex: 1 1 360px;
     min-width: 320px;
     max-width: 480px;
+    flex-shrink: 1; /* Allow shrinking to prevent overlap */
 }
 
 .track-column {
     order: 2;
     flex: 2 1 640px;
-    min-width: 520px;
+    min-width: 480px; /* Reduced from 520px to prevent overlap */
     max-width: 100%;
+    flex-shrink: 1; /* Allow shrinking to prevent overlap */
 }
 
 .glass-panel.track-panel {
@@ -303,7 +305,7 @@
 }
 
 /* Mobile Responsive Breakdown */
-@media (max-width: 1200px) {
+@media (max-width: 1100px) {
     .main-content-row {
         flex-direction: column;
     }
