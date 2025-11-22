@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.2",
+    "accessible-autocomplete": "^3.0.1",
     "d3": "^7.9.0",
     "immutable": "^5.0.3",
     "immutable-sorted": "^0.2.11",

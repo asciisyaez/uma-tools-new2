@@ -22,7 +22,7 @@ function skilldata(id: string) {
 const umaAltIds = Object.keys(umas).flatMap(id => Object.keys(umas[id].outfits));
 const umaNamesForSearch = {};
 umaAltIds.forEach(id => {
-	const u = umas[id.slice(0,4)];
+	const u = umas[id.slice(0, 4)];
 	umaNamesForSearch[id] = (u.outfits[id] + ' ' + u.name[1]).toUpperCase().replace(/\./g, '');
 });
 
@@ -32,22 +32,22 @@ function searchNames(query) {
 }
 
 export function UmaSelector(props) {
-	const randomMob = useMemo(() => `/uma-tools/icons/mob/trained_mob_chr_icon_${8000 + Math.floor(Math.random() * 624)}_000001_01.png`, []);
-	const u = props.value && umas[props.value.slice(0,4)];
+	const randomMob = useMemo(() => `/uma-tools-new2/icons/mob/trained_mob_chr_icon_${8000 + Math.floor(Math.random() * 624)}_000001_01.png`, []);
+	const u = props.value && umas[props.value.slice(0, 4)];
 
 	const input = useRef(null);
 	const suggestionsContainer = useRef(null);
 	const [open, setOpen] = useState(false);
 	const [activeIdx, setActiveIdx] = useState(-1);
 	function update(q) {
-		return {input: q, suggestions: searchNames(q)};
+		return { input: q, suggestions: searchNames(q) };
 	}
-	const [query, search] = useReducer((_,q) => update(q), u && u.name[1], update);
+	const [query, search] = useReducer((_, q) => update(q), u && u.name[1], update);
 
 	function confirm(oid) {
 		setOpen(false);
 		props.select(oid);
-		const uname = umas[oid.slice(0,4)].name[1];
+		const uname = umas[oid.slice(0, 4)].name[1];
 		search(uname);
 		setActiveIdx(-1);
 		if (input.current != null) {
@@ -109,7 +109,7 @@ export function UmaSelector(props) {
 		<div class="umaSelector">
 			<div class="umaSelectorIconsBox" onClick={focus}>
 				<img src={props.value ? icons[props.value] : randomMob} />
-				<img src="/uma-tools/icons/utx_ico_umamusume_00.png" />
+				<img src="/uma-tools-new2/icons/utx_ico_umamusume_00.png" />
 			</div>
 			<div class="umaEpithet"><span>{props.value && u.outfits[props.value]}</span></div>
 			<div class="resetButtons">
@@ -120,7 +120,7 @@ export function UmaSelector(props) {
 				<input type="text" class="umaSelectInput" value={query.input} tabindex={props.tabindex} onInput={handleInput} onKeyDown={handleKeyDown} onFocus={() => setOpen(true)} onBlur={handleBlur} ref={input} />
 				<ul class={`umaSuggestions ${open ? 'open' : ''}`} onMouseDown={handleClick} ref={suggestionsContainer}>
 					{query.suggestions.map((oid, i) => {
-						const uid = oid.slice(0,4);
+						const uid = oid.slice(0, 4);
 						return (
 							<li key={oid} data-uma-id={oid} class={`umaSuggestion ${i == activeIdx ? 'selected' : ''}`}>
 								<img src={icons[oid]} /><span>{umas[uid].outfits[oid]} {umas[uid].name[1]}</span>
@@ -153,19 +153,19 @@ function rankForStat(x: number) {
 export function Stat(props) {
 	return (
 		<div class="horseParam">
-			<img src={`/uma-tools/icons/statusrank/ui_statusrank_${(100 + rankForStat(props.value)).toString().slice(1)}.png`} />
+			<img src={`/uma-tools-new2/icons/statusrank/ui_statusrank_${(100 + rankForStat(props.value)).toString().slice(1)}.png`} />
 			<input type="number" min="1" max="2000" value={props.value} tabindex={props.tabindex} onInput={(e) => props.change(+e.currentTarget.value)} />
 		</div>
 	);
 }
 
-const APTITUDES = Object.freeze(['S','A','B','C','D','E','F','G']);
+const APTITUDES = Object.freeze(['S', 'A', 'B', 'C', 'D', 'E', 'F', 'G']);
 export function AptitudeIcon(props) {
 	const idx = 7 - APTITUDES.indexOf(props.a);
-	return <img src={`/uma-tools/icons/utx_ico_statusrank_${(100 + idx).toString().slice(1)}.png`} />;
+	return <img src={`/uma-tools-new2/icons/utx_ico_statusrank_${(100 + idx).toString().slice(1)}.png`} />;
 }
 
-export function AptitudeSelect(props){
+export function AptitudeSelect(props) {
 	const [open, setOpen] = useState(false);
 	function setAptitude(e) {
 		e.stopPropagation();
@@ -188,31 +188,31 @@ export function AptitudeSelect(props){
 	);
 }
 
-export function MoodSelect(props){
+export function MoodSelect(props) {
 	const [open, setOpen] = useState(false);
 	const moodValues = [
-		{value: 2, icon: 'utx_ico_motivation_m_04', label: 'Great'},
-		{value: 1, icon: 'utx_ico_motivation_m_03', label: 'Good'},
-		{value: 0, icon: 'utx_ico_motivation_m_02', label: 'Normal'},
-		{value: -1, icon: 'utx_ico_motivation_m_01', label: 'Bad'},
-		{value: -2, icon: 'utx_ico_motivation_m_00', label: 'Awful'}
+		{ value: 2, icon: 'utx_ico_motivation_m_04', label: 'Great' },
+		{ value: 1, icon: 'utx_ico_motivation_m_03', label: 'Good' },
+		{ value: 0, icon: 'utx_ico_motivation_m_02', label: 'Normal' },
+		{ value: -1, icon: 'utx_ico_motivation_m_01', label: 'Bad' },
+		{ value: -2, icon: 'utx_ico_motivation_m_00', label: 'Awful' }
 	];
-	
+
 	function setMood(e) {
 		e.stopPropagation();
 		props.setM(+e.currentTarget.dataset.mood);
 		setOpen(false);
 	}
-	
+
 	return (
 		<div class="horseMoodSelect" tabindex={props.tabindex} onClick={() => setOpen(!open)} onBlur={setOpen.bind(null, false)}>
 			<span>
-				<img src={`/uma-tools/icons/global/${moodValues.find(m => m.value === props.m)?.icon}.png`} />
+				<img src={`/uma-tools-new2/icons/global/${moodValues.find(m => m.value === props.m)?.icon}.png`} />
 			</span>
 			<ul style={open ? "display:block" : "display:none"}>
-				{moodValues.map(mood => 
+				{moodValues.map(mood =>
 					<li key={mood.value} data-mood={mood.value} onClick={setMood}>
-						<img src={`/uma-tools/icons/global/${mood.icon}.png`} title={mood.label} />
+						<img src={`/uma-tools-new2/icons/global/${mood.icon}.png`} title={mood.label} />
 					</li>
 				)}
 			</ul>
@@ -263,7 +263,7 @@ export function horseDefTabs() {
 }
 
 export function HorseDef(props) {
-	const {state, setState} = props;
+	const { state, setState } = props;
 	const [skillPickerOpen, setSkillPickerOpen] = useState(false);
 	const [expanded, setExpanded] = useState(() => ImmSet());
 
@@ -353,22 +353,22 @@ export function HorseDef(props) {
 		return Array.from(state.skills).map(id =>
 			expanded.has(id)
 				? <li key={id} class="horseExpandedSkill">
-					  <ExpandedSkillDetails 
-						  id={id} 
-						  distanceFactor={props.courseDistance} 
-						  dismissable={id != u}
-						  forcedPosition={state.forcedSkillPositions.get(id) || ''}
-						  onPositionChange={(value: string) => handlePositionChange(id, value)}
-					  />
-				  </li>
+					<ExpandedSkillDetails
+						id={id}
+						distanceFactor={props.courseDistance}
+						dismissable={id != u}
+						forcedPosition={state.forcedSkillPositions.get(id) || ''}
+						onPositionChange={(value: string) => handlePositionChange(id, value)}
+					/>
+				</li>
 				: <li key={id} style="">
-					  <Skill id={id} selected={false} dismissable={id != u} />
-						  {state.forcedSkillPositions.has(id) && (
-							  <span class="forcedPositionLabel inline">
-								  @{state.forcedSkillPositions.get(id)}m
-							  </span>
-						  )}
-				  </li>
+					<Skill id={id} selected={false} dismissable={id != u} />
+					{state.forcedSkillPositions.has(id) && (
+						<span class="forcedPositionLabel inline">
+							@{state.forcedSkillPositions.get(id)}m
+						</span>
+					)}
+				</li>
 		);
 	}, [state.skills, umaId, expanded, props.courseDistance, state.forcedSkillPositions]);
 
@@ -377,11 +377,11 @@ export function HorseDef(props) {
 			<div class="horseDefHeader">{props.children}</div>
 			<UmaSelector value={umaId} select={setUma} tabindex={tabnext()} onReset={resetThisHorse} onResetAll={props.onResetAll} />
 			<div class="horseParams">
-				<div class="horseParamHeader"><img src="/uma-tools/icons/status_00.png" /><span>Speed</span></div>
-				<div class="horseParamHeader"><img src="/uma-tools/icons/status_01.png" /><span>Stamina</span></div>
-				<div class="horseParamHeader"><img src="/uma-tools/icons/status_02.png" /><span>Power</span></div>
-				<div class="horseParamHeader"><img src="/uma-tools/icons/status_03.png" /><span>Guts</span></div>
-				<div class="horseParamHeader"><img src="/uma-tools/icons/status_04.png" /><span>{CC_GLOBAL?'Wit':'Wisdom'}</span></div>
+				<div class="horseParamHeader"><img src="/uma-tools-new2/icons/status_00.png" /><span>Speed</span></div>
+				<div class="horseParamHeader"><img src="/uma-tools-new2/icons/status_01.png" /><span>Stamina</span></div>
+				<div class="horseParamHeader"><img src="/uma-tools-new2/icons/status_02.png" /><span>Power</span></div>
+				<div class="horseParamHeader"><img src="/uma-tools-new2/icons/status_03.png" /><span>Guts</span></div>
+				<div class="horseParamHeader"><img src="/uma-tools-new2/icons/status_04.png" /><span>{CC_GLOBAL ? 'Wit' : 'Wisdom'}</span></div>
 				<Stat value={state.speed} change={setter('speed')} tabindex={tabnext()} />
 				<Stat value={state.stamina} change={setter('stamina')} tabindex={tabnext()} />
 				<Stat value={state.power} change={setter('power')} tabindex={tabnext()} />

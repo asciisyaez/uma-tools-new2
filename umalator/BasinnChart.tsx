@@ -31,21 +31,21 @@ function skillmeta(id: string) {
 function umaForUniqueSkill(skillId: string): string | null {
 	const sid = parseInt(skillId);
 	if (sid < 100000 || sid >= 200000) return null;
-	
+
 	const remainder = sid - 100001;
 	if (remainder < 0) return null;
-	
+
 	const i = Math.floor(remainder / 10) % 1000;
 	const v = Math.floor(remainder / 10 / 1000) + 1;
-	
+
 	const umaId = i.toString().padStart(3, '0');
 	const baseUmaId = `1${umaId}`;
 	const outfitId = `${baseUmaId}${v.toString().padStart(2, '0')}`;
-	
+
 	if (umas[baseUmaId] && umas[baseUmaId].outfits[outfitId]) {
 		return outfitId;
 	}
-	
+
 	return null;
 }
 
@@ -66,7 +66,7 @@ export function getActivateableSkills(skills: string[], horse: HorseState, cours
 }
 
 export function getNullRow(skillid: string) {
-	return {id: skillid, min: 0, max: 0, mean: 0, median: 0, results: [], runData: null};
+	return { id: skillid, min: 0, max: 0, mean: 0, median: 0, results: [], runData: null };
 }
 
 function formatBasinn(info) {
@@ -75,7 +75,7 @@ function formatBasinn(info) {
 
 function SkillNameCell(props) {
 	const { id, showUmaIcons = false } = props;
-	
+
 	if (showUmaIcons) {
 		const umaId = umaForUniqueSkill(id);
 		if (umaId && icons[umaId]) {
@@ -87,10 +87,10 @@ function SkillNameCell(props) {
 			);
 		}
 	}
-	
+
 	return (
 		<div class="chartSkillName">
-			<img src={`/uma-tools/icons/${skillmeta(id).iconId}.png`} />
+			<img src={`/uma-tools-new2/icons/${skillmeta(id).iconId}.png`} />
 			<span><Text id={`skillnames.${id}`} /></span>
 		</div>
 	);
@@ -123,7 +123,7 @@ export function BasinnChart(props) {
 		header: () => <span>Skill name</span>,
 		accessorKey: 'id',
 		cell: (info) => <SkillNameCell id={info.getValue()} showUmaIcons={props.showUmaIcons} />,
-		sortingFn: (a,b,_) => skillnames[a] < skillnames[b] ? -1 : 1
+		sortingFn: (a, b, _) => skillnames[a] < skillnames[b] ? -1 : 1
 	}, {
 		header: headerRenderer(radioGroup, selectedType, 'min', 'Minimum', headerClick),
 		accessorKey: 'min',
@@ -145,16 +145,16 @@ export function BasinnChart(props) {
 		sortDescFirst: true
 	}], [selectedType, props.showUmaIcons]);
 
-	const [sorting, setSorting] = useState<SortingState>([{id: 'mean', desc: true}]);
+	const [sorting, setSorting] = useState<SortingState>([{ id: 'mean', desc: true }]);
 
 	const table = useTable({
-		_features: tableFeatures({rowSortingFeature}),
-		_rowModels: {sortedRowModel: createSortedRowModel(sortFns)},
+		_features: tableFeatures({ rowSortingFeature }),
+		_rowModels: { sortedRowModel: createSortedRowModel(sortFns) },
 		columns,
 		data: props.data,
 		onSortingChange: setSorting,
 		enableSortingRemoval: false,
-		state: {sorting}
+		state: { sorting }
 	});
 
 	function handleClick(e) {

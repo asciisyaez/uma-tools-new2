@@ -44,7 +44,7 @@ function judge(guess, target) {
 function Row(props) {
   const guess = umas[props.guessedUma] || [];
   const statuses = guess.length > 0
-    ? guess.map((g,i) => judge(g, props.targetNumbers[i]))
+    ? guess.map((g, i) => judge(g, props.targetNumbers[i]))
     : ['empty', 'empty', 'empty', 'empty', 'empty'];
   return (
     <Fragment>
@@ -65,7 +65,7 @@ function Grid(props) {
       <div class="header">Waist</div>
       <div class="header">Hip</div>
       <div class="header">Height</div>
-      {Array(NUM_GUESSES).fill().map((_,i) => <Row guessedUma={props.guesses[i]} targetNumbers={props.target} />)}
+      {Array(NUM_GUESSES).fill().map((_, i) => <Row guessedUma={props.guesses[i]} targetNumbers={props.target} />)}
     </div>
   );
 }
@@ -86,11 +86,11 @@ function CopyButton(props) {
   function copy() {
     const win = props.result == 'win' ? `I solved it in ${props.guesses.length} guesses!` : 'I failed :(';
     const target = umas[props.target];
-    const guesses = props.guesses.map(g => umas[g].map((h,i) => emojiIcons[judge(h, target[i])]).join('')).join('\n');
+    const guesses = props.guesses.map(g => umas[g].map((h, i) => emojiIcons[judge(h, target[i])]).join('')).join('\n');
     const text = `Umadle ${props.date} ${String.fromCodePoint(0x1f40e)}
 ${win}
 ${guesses}
-https://alpha123.github.io/uma-tools/umadle`;
+https://asciisyaez.github.io/uma-tools-new2/umadle`;
     navigator.clipboard.writeText(text);
     setCopied(true);
   }
@@ -130,7 +130,7 @@ function Done(props) {
 const localdate = new Date();
 const utc = localdate.getTime() + localdate.getTimezoneOffset() * 60000;
 const dtoday = new Date(utc + -6 * 3600000);
-const today = dtoday.toLocaleDateString('ja-JP', {year: 'numeric', month: '2-digit', day: '2-digit'}).replace(/\//g, '-');
+const today = dtoday.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-');
 const rng = new Rule30CARng(Math.imul(dtoday.getFullYear(), 524287) ^ Math.imul(dtoday.getMonth(), 6700417) ^ Math.imul(dtoday.getDay(), 131071));
 for (let i = 0; i < 1000; ++i) {
   rng.step();
@@ -141,7 +141,7 @@ const umaNames = Object.keys(umas);
 const umaNamesForSearch = umaNames.map(u => u.toUpperCase().replace(/\./g, ''));
 function suggestUma(query, populateResults) {
   const q = query.toUpperCase().replace(/\./g, '');
-  populateResults(umaNames.filter((_,i) => umaNamesForSearch[i].indexOf(q) > -1));
+  populateResults(umaNames.filter((_, i) => umaNamesForSearch[i].indexOf(q) > -1));
 }
 function renderSuggestion(name) {
   return `<div class="suggestion"><img src="${icons[name]}"><span>${name}</span></div>`;
@@ -181,8 +181,8 @@ function App(props) {
       <Grid guesses={guesses} target={umas[uma]} />
       {
         done
-        ? <Done result={done} guesses={guesses} target={uma} date={today} isPractice={isPractice} practiceCb={practice} />
-        : <Autocomplete id="umainput" source={suggestUma} confirmOnBlur={false} onConfirm={doGuess} templates={{suggestion: renderSuggestion}} />
+          ? <Done result={done} guesses={guesses} target={uma} date={today} isPractice={isPractice} practiceCb={practice} />
+          : <Autocomplete id="umainput" source={suggestUma} confirmOnBlur={false} onConfirm={doGuess} templates={{ suggestion: renderSuggestion }} />
       }
     </Fragment>
   );
