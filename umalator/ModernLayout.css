@@ -49,7 +49,7 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-    /* Removing min-width: 0 to prevent overlap issues reported by user */
+    min-width: 0;
 }
 
 .uma-column {
@@ -89,6 +89,53 @@
 .results-pane {
     width: 100%;
     margin-top: 0;
+}
+
+/* Results layout overrides (legacy IDs expect 960px+ widths) */
+.modern-layout-container #resultsPaneWrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.modern-layout-container #resultsPaneWrapper > * {
+    flex: 1 1 320px;
+    min-width: 0;
+}
+
+.modern-layout-container #resultsPane {
+    width: 100% !important;
+    max-width: 960px;
+    box-sizing: border-box;
+}
+
+.modern-layout-container #resultsPane.mode-chart {
+    width: 100% !important;
+}
+
+.modern-layout-container #infoTables {
+    padding-right: 0;
+    min-width: 0;
+    width: 100%;
+    max-width: 540px;
+    margin: 0 auto;
+}
+
+.modern-layout-container #infoTables > table,
+.modern-layout-container #infoTables tbody,
+.modern-layout-container #infoTables > table tr {
+    width: 100% !important;
+}
+
+.modern-layout-container #infoTables tbody {
+    max-height: none;
+}
+
+.modern-layout-container #resultsPaneWrapper table {
+    width: 100%;
 }
 
 /* Controls Panel */
