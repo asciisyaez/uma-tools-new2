@@ -16,7 +16,7 @@
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: none; /* Removed border for seamless transition */
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
     padding: 20px;
     transition: all 0.3s ease;
@@ -25,7 +25,7 @@
 /* Dark Mode Glass */
 .dark .glass-panel {
     background: rgba(30, 30, 30, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: none; /* Removed border */
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
 }
 
