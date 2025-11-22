@@ -31,10 +31,10 @@
 
 /* Layout Structure: Side-by-Side Priority */
 .main-content-row {
-    display: grid;
-    grid-template-columns: minmax(360px, 420px) minmax(0, 1fr);
+    display: flex;
+    flex-wrap: wrap;
     gap: 20px;
-    align-items: start;
+    align-items: flex-start;
     width: 100%;
 }
 
@@ -48,10 +48,16 @@
 
 .uma-column {
     order: 1;
+    flex: 1 1 360px;
+    min-width: 320px;
+    max-width: 480px;
 }
 
 .track-column {
     order: 2;
+    flex: 2 1 640px;
+    min-width: 520px;
+    max-width: 100%;
 }
 
 .glass-panel.track-panel {
@@ -326,7 +332,14 @@
 /* Mobile Responsive Breakdown */
 @media (max-width: 1200px) {
     .main-content-row {
-        grid-template-columns: 1fr;
+        flex-direction: column;
+    }
+
+    .uma-column,
+    .track-column {
+        flex-basis: 100%;
+        max-width: 100%;
+        min-width: 0;
     }
 }
 

@@ -51,7 +51,7 @@ export function ModernLayout(props: LayoutProps) {
             <IntlProvider definition={strings}>
                 <div className="modern-layout-container">
                     <div className="main-content-row">
-                        <div className="uma-column">
+                        <div className="uma-column" data-pane="UmaPane">
                             <div className="glass-panel uma-panel">
                                 <div className={!expanded && currentIdx == 0 ? 'selected-tab-content' : 'hidden-tab-content'}>
                                     <HorseDef key={uma1.outfitId} state={uma1} setState={setUma1} courseDistance={course.distance} tabstart={() => 4} onResetAll={resetAllUmas}>
@@ -85,7 +85,7 @@ export function ModernLayout(props: LayoutProps) {
                             </div>
                         </div>
 
-                        <div className="track-column">
+                        <div className="track-column" data-pane="Track">
                             <div className="glass-panel track-panel">
                                 <RaceTrack courseid={courseId} width={960} height={240} xOffset={20} yOffset={15} yExtra={20} mouseMove={rtMouseMove} mouseLeave={rtMouseLeave} onSkillDrag={handleSkillDrag} regions={[...skillActivations, ...rushedIndicators]} posKeepLabels={posKeepLabels} uma1={uma1} uma2={uma2} pacer={pacer}>
                                     <VelocityLines data={chartData} courseDistance={course.distance} width={960} height={250} xOffset={20} showHp={showHp} showLanes={showLanes} horseLane={course.horseLane} showVirtualPacemaker={showVirtualPacemakerOnGraph && posKeepMode === 2} selectedPacemakers={getSelectedPacemakers()} />
