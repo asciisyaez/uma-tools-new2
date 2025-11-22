@@ -35,14 +35,13 @@
 
 /* Layout Structure: Side-by-Side Priority */
 .main-content-row {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 400px 1fr;
     gap: 20px;
-    align-items: flex-start;
+    align-items: start;
     width: 100%;
     box-sizing: border-box;
     min-width: 0;
-    /* Allow shrinking */
 }
 
 .uma-column,
@@ -51,27 +50,18 @@
     flex-direction: column;
     gap: 20px;
     min-width: 0;
+    /* Remove flex properties that caused overlap */
 }
 
 .uma-column {
-    order: 1;
-    flex: 0 1 400px;
-    /* Don't grow, allow shrink, ideal 400px */
-    min-width: 300px;
-    /* Reduced to allow more flexibility */
-    max-width: 450px;
-    /* Slightly reduced */
+    /* Width controlled by grid */
     box-sizing: border-box;
 }
 
 .track-column {
-    order: 2;
-    flex: 1 1 auto;
-    /* Grow to fill space, allow shrink */
-    min-width: 0;
-    /* Remove min-width to prevent overflow */
-    max-width: 100%;
+    /* Width controlled by grid */
     box-sizing: border-box;
+    max-width: 100%;
 }
 
 .glass-panel.track-panel {
@@ -325,14 +315,13 @@
 /* Mobile Responsive Breakdown */
 @media (max-width: 1100px) {
     .main-content-row {
-        flex-direction: column;
+        grid-template-columns: 1fr;
     }
 
     .uma-column,
     .track-column {
-        flex-basis: 100%;
+        width: 100%;
         max-width: 100%;
-        min-width: 0;
     }
 }
 
