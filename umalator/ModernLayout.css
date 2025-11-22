@@ -1,0 +1,315 @@
+.modern-layout-container {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    color: var(--text-primary);
+    /* Background handled by app container or body */
+}
+
+/* Glass Panel Base */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+/* Dark Mode Glass */
+.dark .glass-panel {
+    background: rgba(30, 30, 30, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Top Pane Grid */
+.top-pane {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 20px;
+}
+
+/* Controls Grid */
+.controls-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Control Sections */
+.control-section {
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 15px;
+    padding: 15px;
+}
+
+.dark .control-section {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Inputs & Groups */
+.glass-input-group {
+    margin-bottom: 15px;
+}
+
+.glass-input-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+    color: var(--text-secondary);
+}
+
+.glass-input, .glass-select {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.5);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    transition: all 0.2s;
+}
+
+.dark .glass-input, .dark .glass-select {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.glass-input:focus, .glass-select:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    background: rgba(255, 255, 255, 0.8);
+}
+
+/* Buttons */
+.glass-button {
+    width: 100%;
+    padding: 10px 20px;
+    border-radius: 12px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(5px);
+}
+
+.glass-button.primary {
+    background: var(--accent-gradient);
+    color: white;
+    box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.3);
+}
+
+.glass-button.primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(var(--accent-rgb), 0.4);
+}
+
+.glass-button.secondary {
+    background: rgba(128, 128, 128, 0.1);
+    color: var(--text-primary);
+    margin-top: 8px;
+}
+
+.glass-button.icon-only {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+/* Radio Group */
+.radio-group {
+    display: flex;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 4px;
+    border-radius: 12px;
+}
+
+.dark .radio-group {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.radio-group label {
+    flex: 1;
+    text-align: center;
+    padding: 6px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    margin: 0 !important;
+    transition: all 0.2s;
+}
+
+.radio-group label.active {
+    background: white;
+    color: var(--accent-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dark .radio-group label.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.radio-group input {
+    display: none;
+}
+
+/* Uma Pane */
+.uma-pane {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 900px) {
+    .top-pane {
+        grid-template-columns: 1fr;
+    }
+    
+    .modern-layout-container {
+        padding: 10px;
+    }
+    
+    .glass-panel {
+        padding: 15px;
+    }
+    
+    /* Stack charts vertically if needed, or allow scroll */
+    .racetrackView {
+        overflow-x: auto;
+    }
+}
+
+/* Variables */
+:root {
+    --accent-color: #007AFF;
+    --accent-rgb: 0, 122, 255;
+    --accent-gradient: linear-gradient(135deg, #007AFF, #00C6FF);
+    --text-primary: #1d1d1f;
+    --text-secondary: #86868b;
+}
+
+.dark {
+    --accent-color: #0A84FF;
+    --accent-rgb: 10, 132, 255;
+    --accent-gradient: linear-gradient(135deg, #0A84FF, #5E5CE6);
+    --text-primary: #f5f5f7;
+    --text-secondary: #86868b;
+}
+
+/* Utility */
+.hidden-tab-content {
+    display: none;
+}
+
+.selected-tab-content {
+    display: block;
+    width: 100%;
+}
+
+.uma-copy-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+    padding: 0 10px;
+}
+
+.input-with-button {
+    display: flex;
+    gap: 8px;
+}
+
+.icon-button {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.icon-button:hover {
+    opacity: 1;
+}
+
+.toggles-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.meta-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+}
+
+.dark .meta-actions {
+    border-top-color: rgba(255,255,255,0.1);
+}
+
+.text-button {
+    background: none;
+    border: none;
+    color: var(--accent-color);
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+/* Overrides for existing components */
+.modern-layout-container .horseDef {
+    background: transparent !important;
+    border: none !important;
+    width: 100% !important;
+    box-shadow: none !important;
+}
+
+.modern-layout-container .horseDefHeader {
+    border-radius: 15px !important;
+    margin-bottom: 15px;
+}
+
+.modern-layout-container .horseParams {
+    background: rgba(255,255,255,0.5) !important;
+    border: 1px solid rgba(0,0,0,0.1) !important;
+    width: 100% !important;
+    border-radius: 12px !important;
+}
+
+.dark .modern-layout-container .horseParams {
+    background: rgba(0,0,0,0.3) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+/* Fix for RaceTrack text in dark mode */
+.dark text {
+    fill: #e0e0e0;
+}
+

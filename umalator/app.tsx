@@ -29,7 +29,10 @@ import skillnames from '../uma-skill-tools/data/skillnames.json';
 import skill_meta from '../skill_meta.json';
 import championsMeetings from './champions_meetings.json';
 
-
+// Layouts
+import { ClassicLayout } from './ClassicLayout';
+import { ModernLayout } from './ModernLayout';
+import { LayoutProps } from './LayoutProps';
 
 function skillmeta(id: string) {
 	// handle the fake skills (e.g., variations of Sirius unique) inserted by make_skill_data with ids like 100701-1
@@ -40,8 +43,6 @@ import './app.css';
 
 const DEFAULT_SAMPLES = 500;
 const DEFAULT_SEED = 2615953739;
-
-
 
 class RaceParams extends Record({
 	mood: 2 as Mood,
@@ -186,7 +187,7 @@ function binSearch(a: number[], x: number) {
 	return Math.abs(a[lo] - x) < Math.abs(a[hi] - x) ? lo : hi;
 }
 
-function TimeOfDaySelect(props) {
+export function TimeOfDaySelect(props) {
 	function click(e) {
 		e.stopPropagation();
 		if (!('timeofday' in e.target.dataset)) return;
@@ -202,7 +203,7 @@ function TimeOfDaySelect(props) {
 	);
 }
 
-function GroundSelect(props) {
+export function GroundSelect(props) {
 	if (CC_GLOBAL) {
 		return (
 			<select class="groundSelect" value={props.value} onInput={(e) => props.set(+e.currentTarget.value)}>
@@ -223,7 +224,7 @@ function GroundSelect(props) {
 	);
 }
 
-function WeatherSelect(props) {
+export function WeatherSelect(props) {
 	function click(e) {
 		e.stopPropagation();
 		if (!('weather' in e.target.dataset)) return;
@@ -238,7 +239,7 @@ function WeatherSelect(props) {
 	);
 }
 
-function SeasonSelect(props) {
+export function SeasonSelect(props) {
 	function click(e) {
 		e.stopPropagation();
 		if (!('season' in e.target.dataset)) return;
@@ -253,7 +254,7 @@ function SeasonSelect(props) {
 	);
 }
 
-function Histogram(props) {
+export function Histogram(props) {
 	const { data, width, height } = props;
 	const axes = useRef(null);
 	const xH = 20;
@@ -286,7 +287,7 @@ function Histogram(props) {
 	);
 }
 
-function BasinnChartPopover(props) {
+export function BasinnChartPopover(props) {
 	const popover = useRef(null);
 	useEffect(function () {
 		if (popover.current == null) return;
@@ -309,7 +310,7 @@ function BasinnChartPopover(props) {
 	);
 }
 
-function VelocityLines(props) {
+export function VelocityLines(props) {
 	const axes = useRef(null);
 	const data = props.data;
 	const x = d3.scaleLinear().domain([0, props.courseDistance]).range([0, props.width]);
@@ -621,7 +622,7 @@ function updateResultsState(state: typeof EMPTY_RESULTS_STATE, o: number | strin
 	}
 }
 
-function RacePresets(props) {
+export function RacePresets(props) {
 	const id = useId();
 	const selectedIdx = presets.findIndex(p => p.courseId == props.courseId && p.racedef.equals(props.racedef));
 	return (
@@ -642,10 +643,8 @@ function RacePresets(props) {
 	);
 }
 
-const baseSkillsToTest = Object.keys(skilldata).filter(id => skilldata[id].rarity < 3);
-
-const enum Mode { Compare, Chart, UniquesChart }
-const enum UiStateMsg { SetModeCompare, SetModeChart, SetModeUniquesChart, SetCurrentIdx0, SetCurrentIdx1, SetCurrentIdx2, ToggleExpand }
+export const enum Mode { Compare, Chart, UniquesChart }
+export const enum UiStateMsg { SetModeCompare, SetModeChart, SetModeUniquesChart, SetCurrentIdx0, SetCurrentIdx1, SetCurrentIdx2, ToggleExpand }
 
 const DEFAULT_UI_STATE = { mode: Mode.Compare, currentIdx: 0, expanded: false };
 
@@ -668,7 +667,7 @@ function nextUiState(state: typeof DEFAULT_UI_STATE, msg: UiStateMsg) {
 	}
 }
 
-function WitVarianceSettingsPopup({
+export function WitVarianceSettingsPopup({
 	show,
 	onClose,
 	allowRushedUma1,
@@ -757,8 +756,8 @@ function WitVarianceSettingsPopup({
 }
 
 function App(props) {
-	//const [language, setLanguage] = useLanguageSelect(); 
 	const [darkMode, toggleDarkMode] = useReducer(b => !b, false);
+    const [viewMode, setViewMode] = useState<'classic' | 'modern'>('classic'); // Default to classic
 	const [skillsOpen, setSkillsOpen] = useState(false);
 	const [racedef, setRaceDef] = useState(() => DEFAULT_PRESET.racedef);
 	const [nsamples, setSamples] = useState(DEFAULT_SAMPLES);
@@ -771,7 +770,6 @@ function App(props) {
 	const [showLanes, toggleShowLanes] = useReducer((b, _) => !b, false);
 
 	useEffect(() => { document.documentElement.classList.toggle('dark', darkMode); }, [darkMode]);
-	//fuck dark mode
 
 	// Wrapper to handle mode changes and reset tab if needed
 	function setPosKeepMode(mode: PosKeepMode) {
@@ -1439,16 +1437,7 @@ function App(props) {
 		posKeepLabels.push(currentLabel);
 	}
 
-
-	const umaTabs = (
-		<Fragment>
-			<div class={`umaTab ${currentIdx == 0 ? 'selected' : ''}`} onClick={() => updateUiState(UiStateMsg.SetCurrentIdx0)}>Umamusume 1</div>
-			{mode == Mode.Compare && <div class={`umaTab ${currentIdx == 1 ? 'selected' : ''}`} onClick={() => updateUiState(UiStateMsg.SetCurrentIdx1)}>Umamusume 2{posKeepMode != PosKeepMode.Virtual && <div id="expandBtn" title="Expand panel" onClick={toggleExpand} />}</div>}
-			{posKeepMode == PosKeepMode.Virtual && <div class={`umaTab ${currentIdx == 2 ? 'selected' : ''}`} onClick={() => updateUiState(UiStateMsg.SetCurrentIdx2)}>Virtual Pacemaker<div id="expandBtn" title="Expand panel" onClick={toggleExpand} /></div>}
-		</Fragment>
-	);
-
-	let resultsPane;
+    let resultsPane = null;
 	if (mode == Mode.Compare && results.length > 0) {
 		resultsPane = (
 			<div id="resultsPaneWrapper">
@@ -1588,219 +1577,45 @@ function App(props) {
 				</div>
 			</div>
 		);
-	} else if (CC_GLOBAL) {
-		resultsPane = (
-			<div id="resultsPaneWrapper">
-				<div id="resultsPane">
-					<IntroText />
-				</div>
-			</div>
-		);
-	} else {
-		resultsPane = null;
 	}
 
-	return (
-		<Language.Provider value={props.lang}>
-			<IntlProvider definition={strings}>
-				<div id="topPane" class={chartData ? 'hasResults' : ''}>
-					<RaceTrack courseid={courseId} width={960} height={240} xOffset={20} yOffset={15} yExtra={20} mouseMove={rtMouseMove} mouseLeave={rtMouseLeave} onSkillDrag={handleSkillDrag} regions={[...skillActivations, ...rushedIndicators]} posKeepLabels={posKeepLabels} uma1={uma1} uma2={uma2} pacer={pacer}>
-						<VelocityLines data={chartData} courseDistance={course.distance} width={960} height={250} xOffset={20} showHp={showHp} showLanes={showLanes} horseLane={course.horseLane} showVirtualPacemaker={showVirtualPacemakerOnGraph && posKeepMode === PosKeepMode.Virtual} selectedPacemakers={getSelectedPacemakers()} />
+    const commonProps: LayoutProps = {
+        lang: props.lang,
+        strings,
+        courseId, setCourseId, course, chartData, rtMouseMove, rtMouseLeave, handleSkillDrag,
+        skillActivations, rushedIndicators, posKeepLabels, uma1, setUma1, uma2, setUma2, pacer, setPacer,
+        resetAllUmas, copyUmaToRight, copyUmaToLeft, swapUmas, racedef, racesetter, setRaceDef,
+        mode, updateUiState, isSimulationRunning, doComparison, doBasinnChart, doRunOnce,
+        nsamples, setSamples, seed, setSeed, setRunOnceCounter, posKeepMode, setPosKeepMode, copyStateUrl,
+        showHp, toggleShowHp, showLanes, toggleShowLanes, showVirtualPacemakerOnGraph,
+        pacemakerCount, handlePacemakerCountChange, selectedPacemakerIndices, togglePacemakerSelection,
+        isPacemakerDropdownOpen, setIsPacemakerDropdownOpen, getSelectedPacemakers,
+        simWitVariance, handleSimWitVarianceToggle, showWitVarianceSettings, setShowWitVarianceSettings,
+        witVarianceProps: {
+            allowRushedUma1, allowRushedUma2, allowDownhillUma1, allowDownhillUma2,
+            allowSectionModifierUma1, allowSectionModifierUma2, allowSkillCheckChanceUma1, allowSkillCheckChanceUma2,
+            toggleRushedUma1, toggleRushedUma2, toggleDownhillUma1, toggleDownhillUma2,
+            toggleSectionModifierUma1, toggleSectionModifierUma2, toggleSkillCheckChanceUma1, toggleSkillCheckChanceUma2
+        },
+        expanded, toggleExpand, currentIdx, resultsContent: resultsPane, popoverSkill, tableData
+    };
 
-						<g id="rtMouseOverBox" style="display:none">
-							<text id="rtV1" x="25" y="10" fill="#2a77c5" font-size="10px"></text>
-							<text id="rtV2" x="25" y="20" fill="#c52a2a" font-size="10px"></text>
-							<text id="rtVp" x="25" y="30" fill="#22c55e" font-size="10px"></text>
-							<text id="pd1" x="25" y="10" fill="#2a77c5" font-size="10px"></text>
-							<text id="pd2" x="25" y="20" fill="#c52a2a" font-size="10px"></text>
-						</g>
-					</RaceTrack>
-					<div id="runPane">
-						<fieldset>
-							<legend>Mode:</legend>
-							<div>
-								<input type="radio" id="mode-compare" name="mode" value="compare" checked={mode == Mode.Compare} onClick={() => updateUiState(UiStateMsg.SetModeCompare)} />
-								<label for="mode-compare">Compare</label>
-							</div>
-							<div>
-								<input type="radio" id="mode-chart" name="mode" value="chart" checked={mode == Mode.Chart} onClick={() => updateUiState(UiStateMsg.SetModeChart)} />
-								<label for="mode-chart">Skill chart</label>
-							</div>
-							<div>
-								<input type="radio" id="mode-uniques-chart" name="mode" value="uniques-chart" checked={mode == Mode.UniquesChart} onClick={() => updateUiState(UiStateMsg.SetModeUniquesChart)} />
-								<label for="mode-uniques-chart">Uma chart</label>
-							</div>
-						</fieldset>
-						{
-							mode == Mode.Compare
-								? <button id="run" onClick={doComparison} tabindex={1} disabled={isSimulationRunning}>COMPARE</button>
-								: <button id="run" onClick={doBasinnChart} tabindex={1} disabled={isSimulationRunning}>RUN</button>
-						}
-						{
-							mode == Mode.Compare
-								? <button id="runOnce" onClick={doRunOnce} tabindex={1} disabled={isSimulationRunning}>Run Once</button>
-								: null
-						}
-						<label for="nsamples">Samples:</label>
-						<input type="number" id="nsamples" min="1" max="10000" value={nsamples} onInput={(e) => setSamples(+e.currentTarget.value)} />
-						<label for="seed">Seed:</label>
-						<div id="seedWrapper">
-							<input type="number" id="seed" value={seed} onInput={(e) => { setSeed(+e.currentTarget.value); setRunOnceCounter(0); }} />
-							<button title="Randomize seed" onClick={() => { setSeed(Math.floor(Math.random() * (-1 >>> 0)) >>> 0); setRunOnceCounter(0); }}>🎲</button>
-						</div>
-						<fieldset id="posKeepFieldset">
-							<legend>Position Keep:</legend>
-							<select id="poskeepmode" value={posKeepMode} onInput={(e) => setPosKeepMode(+e.currentTarget.value)}>
-								<option value={PosKeepMode.None}>None</option>
-								<option value={PosKeepMode.Approximate}>Approximate</option>
-								<option value={PosKeepMode.Virtual}>Virtual Pacemaker</option>
-							</select>
-							{posKeepMode == PosKeepMode.Approximate && (
-								<div id="pacemakerIndicator">
-									<span>Using default pacemaker</span>
-								</div>
-							)}
-							{posKeepMode == PosKeepMode.Virtual && (
-								<div id="pacemakerIndicator">
-									<div>
-										<label>Show Pacemakers:</label>
-										<div className="pacemaker-combobox">
-											<button
-												className="pacemaker-combobox-button"
-												onClick={() => setIsPacemakerDropdownOpen(!isPacemakerDropdownOpen)}
-											>
-												{selectedPacemakerIndices.length === 0
-													? 'None'
-													: selectedPacemakerIndices.length === 1
-														? `Pacemaker ${selectedPacemakerIndices[0] + 1}`
-														: selectedPacemakerIndices.length === pacemakerCount
-															? 'All Pacemakers'
-															: `${selectedPacemakerIndices.length} Pacemakers`
-												}
-												<span className="pacemaker-combobox-arrow">▼</span>
-											</button>
-											{isPacemakerDropdownOpen && (
-												<div className="pacemaker-combobox-dropdown">
-													{[...Array(pacemakerCount)].map((_, index) => (
-														<label key={index} className="pacemaker-combobox-option">
-															<input
-																type="checkbox"
-																checked={selectedPacemakerIndices.includes(index)}
-																onChange={() => togglePacemakerSelection(index)}
-															/>
-															<span style={{ color: index === 0 ? '#22c55e' : index === 1 ? '#a855f7' : '#ec4899' }}>
-																Pacemaker {index + 1}
-															</span>
-														</label>
-													))}
-												</div>
-											)}
-										</div>
-									</div>
-									<div id="pacemakerCountControl">
-										<label for="pacemakercount">Number of pacemakers: {pacemakerCount}</label>
-										<input
-											type="range"
-											id="pacemakercount"
-											min="1"
-											max="3"
-											value={pacemakerCount}
-											onInput={(e) => handlePacemakerCountChange(+e.currentTarget.value)}
-										/>
-									</div>
-								</div>
-							)}
-						</fieldset>
-						<div>
-							<label for="showhp">Show HP</label>
-							<input type="checkbox" id="showhp" checked={showHp} onClick={toggleShowHp} />
-						</div>
-						<div>
-							<label for="showlanes">Show Lanes</label>
-							<input type="checkbox" id="showlanes" checked={showLanes} onClick={toggleShowLanes} />
-						</div>
-						<div>
-							<label for="simWitVariance">Wit Variance</label>
-							<input type="checkbox" id="simWitVariance" checked={simWitVariance} onClick={handleSimWitVarianceToggle} />
-							<button
-								className="wit-variance-settings-btn"
-								onClick={() => setShowWitVarianceSettings(true)}
-								title="Configure Wit Variance settings"
-								disabled={!simWitVariance}
-							>
-								<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-									<circle cx="12" cy="12" r="3"></circle>
-									<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-								</svg>
-							</button>
-						</div>
-
-						<a href="#" onClick={copyStateUrl}>Copy link</a>
-						<RacePresets set={(courseId, racedef) => { setCourseId(courseId); setRaceDef(racedef); }} />
-					</div>
-					<div id="buttonsRow">
-						<TrackSelect key={courseId} courseid={courseId} setCourseid={setCourseId} tabindex={2} />
-						<div id="buttonsRowSpace" />
-						<TimeOfDaySelect value={racedef.time} set={racesetter('time')} />
-						<div>
-							<GroundSelect value={racedef.ground} set={racesetter('ground')} />
-							<WeatherSelect value={racedef.weather} set={racesetter('weather')} />
-						</div>
-						<SeasonSelect value={racedef.season} set={racesetter('season')} />
-					</div>
-				</div>
-				{resultsPane}
-				{expanded && <div id="umaPane" />}
-				<div id={expanded ? 'umaOverlay' : 'umaPane'}>
-					<div class={!expanded && currentIdx == 0 ? 'selected' : ''}>
-						<HorseDef key={uma1.outfitId} state={uma1} setState={setUma1} courseDistance={course.distance} tabstart={() => 4} onResetAll={resetAllUmas}>
-							{expanded ? 'Umamusume 1' : umaTabs}
-						</HorseDef>
-					</div>
-					{expanded &&
-						<div id="copyUmaButtons">
-							<div id="copyUmaToRight" title="Copy uma 1 to uma 2" onClick={copyUmaToRight} />
-							<div id="copyUmaToLeft" title="Copy uma 2 to uma 1" onClick={copyUmaToLeft} />
-							<div id="swapUmas" title="Swap umas" onClick={swapUmas}>⮂</div>
-						</div>}
-					{mode == Mode.Compare && <div class={!expanded && currentIdx == 1 ? 'selected' : ''}>
-						<HorseDef key={uma2.outfitId} state={uma2} setState={setUma2} courseDistance={course.distance} tabstart={() => 4 + horseDefTabs()} onResetAll={resetAllUmas}>
-							{expanded ? 'Umamusume 2' : umaTabs}
-						</HorseDef>
-					</div>}
-					{posKeepMode == PosKeepMode.Virtual && <div class={!expanded && currentIdx == 2 ? 'selected' : ''}>
-						<HorseDef key={pacer.outfitId} state={pacer} setState={setPacer} courseDistance={course.distance} tabstart={() => 4 + (mode == Mode.Compare ? 2 : 1) * horseDefTabs()} onResetAll={resetAllUmas}>
-							{expanded ? 'Virtual Pacemaker' : umaTabs}
-						</HorseDef>
-					</div>}
-					{expanded && <div id="closeUmaOverlay" title="Close panel" onClick={toggleExpand}>✕</div>}
-				</div>
-				{popoverSkill && <BasinnChartPopover skillid={popoverSkill} results={tableData.get(popoverSkill).results} courseDistance={course.distance} />}
-				<WitVarianceSettingsPopup
-					show={showWitVarianceSettings}
-					onClose={() => setShowWitVarianceSettings(false)}
-					allowRushedUma1={allowRushedUma1}
-					allowRushedUma2={allowRushedUma2}
-					allowDownhillUma1={allowDownhillUma1}
-					allowDownhillUma2={allowDownhillUma2}
-					allowSectionModifierUma1={allowSectionModifierUma1}
-					allowSectionModifierUma2={allowSectionModifierUma2}
-					allowSkillCheckChanceUma1={allowSkillCheckChanceUma1}
-					allowSkillCheckChanceUma2={allowSkillCheckChanceUma2}
-					toggleRushedUma1={toggleRushedUma1}
-					toggleRushedUma2={toggleRushedUma2}
-					toggleDownhillUma1={toggleDownhillUma1}
-					toggleDownhillUma2={toggleDownhillUma2}
-					toggleSectionModifierUma1={toggleSectionModifierUma1}
-					toggleSectionModifierUma2={toggleSectionModifierUma2}
-					toggleSkillCheckChanceUma1={toggleSkillCheckChanceUma1}
-					toggleSkillCheckChanceUma2={toggleSkillCheckChanceUma2}
-				/>
-			</IntlProvider>
-		</Language.Provider>
-	);
+    return (
+        <div className={`app-container ${viewMode}`}>
+            <div className="view-controls" style={{ position: 'fixed', top: 10, right: 10, zIndex: 10000, display: 'flex', gap: 10 }}>
+                <button onClick={() => setViewMode(viewMode === 'classic' ? 'modern' : 'classic')} 
+                        style={{ padding: '8px 16px', borderRadius: 20, border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', cursor: 'pointer', backdropFilter: 'blur(5px)' }}>
+                    {viewMode === 'classic' ? 'Switch to Modern View' : 'Switch to Classic View'}
+                </button>
+                <button onClick={toggleDarkMode}
+                        style={{ padding: '8px', borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', cursor: 'pointer', backdropFilter: 'blur(5px)' }}>
+                    {darkMode ? '☀️' : '🌙'}
+                </button>
+            </div>
+            {viewMode === 'classic' ? <ClassicLayout {...commonProps} /> : <ModernLayout {...commonProps} />}
+        </div>
+    );
 }
 
 initTelemetry();
 render(<App lang="en-ja" />, document.getElementById('app'));
-
