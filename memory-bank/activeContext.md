@@ -16,6 +16,9 @@
     - Moved Controls to a separate panel to prevent overlap.
     - Added responsive CSS scaling for `RaceTrack` and `HorseDef` to fit available width.
     - Constrained button image sizes in Modern View.
+- **Modern Polish**:
+    - Track + Uma panels now live inside a shared `main-content-row` so they stay side-by-side on desktop while stacking gracefully on mobile.
+    - Dark Mode dropdowns (track select, course select, Uma suggestions, aptitude/mood pickers) gained readable backgrounds and option colors.
 - **Build**: Updated `umalator-global` by running the build script.
 - **Deployment**: Pushed changes to GitHub.
 

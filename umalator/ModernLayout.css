@@ -39,9 +39,16 @@
     width: 100%;
 }
 
+.track-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    flex: 1.37 1 500px;
+    min-width: 0;
+}
+
 .glass-panel.track-panel {
-    /* Flex Logic: Grow proportional to ideal size (960), Shrink allowed, Basis small enough to fit on laptops */
-    flex: 1.37 1 500px; 
+    width: 100%;
     min-width: 0; /* Allow shrinking below content size (crucial for SVG scaling) */
     overflow-x: hidden; /* Let SVG scale instead of scroll */
 }
@@ -50,6 +57,10 @@
     /* Flex Logic: Grow proportional to ideal size (700), Shrink allowed */
     flex: 1 1 400px;
     min-width: 0;
+}
+
+.results-pane {
+    width: 100%;
 }
 
 /* Controls Panel */
@@ -155,6 +166,48 @@
     font-weight: 600;
     margin-bottom: 5px;
     color: var(--text-secondary);
+}
+
+.modern-layout-container .control-section select {
+    width: 100%;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.85);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    transition: all 0.2s;
+    appearance: none;
+}
+
+.modern-layout-container .control-section select option {
+    color: var(--text-primary);
+    background: #ffffff;
+}
+
+.dark .modern-layout-container .control-section select {
+    background: rgba(0, 0, 0, 0.45);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+}
+
+.dark .modern-layout-container .control-section select option {
+    background: rgba(15, 15, 15, 0.95);
+    color: var(--text-primary);
+}
+
+.modern-layout-container .trackSelect > select {
+    border-radius: 10px !important;
+    border: 1px solid rgba(0, 0, 0, 0.15) !important;
+    padding: 8px 12px !important;
+    background: rgba(255, 255, 255, 0.85) !important;
+    color: var(--text-primary) !important;
+    margin-bottom: 8px;
+}
+
+.dark .modern-layout-container .trackSelect > select {
+    background: rgba(0, 0, 0, 0.45) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 .glass-input, .glass-select {
@@ -263,7 +316,7 @@
         flex-direction: column;
     }
     
-    .glass-panel.track-panel,
+    .track-column,
     .glass-panel.uma-panel {
         flex: 1 1 auto;
         width: 100%;
@@ -382,6 +435,50 @@
 .dark .modern-layout-container .horseParams {
     background: rgba(0,0,0,0.3) !important;
     border: 1px solid rgba(255,255,255,0.1) !important;
+}
+
+.dark .modern-layout-container .umaSelectInput {
+    color: var(--text-primary) !important;
+}
+
+.modern-layout-container .umaSuggestions {
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.modern-layout-container .umaSuggestion {
+    color: var(--text-primary);
+}
+
+.dark .modern-layout-container .umaSuggestions {
+    background: rgba(16, 16, 16, 0.95);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.dark .modern-layout-container .umaSuggestion {
+    background: transparent;
+    color: var(--text-primary);
+}
+
+.dark .modern-layout-container .umaSuggestion:nth-child(even) {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.dark .modern-layout-container .umaSuggestion.selected,
+.dark .modern-layout-container .umaSuggestion:hover {
+    background: rgba(var(--accent-rgb), 0.35);
+    color: #fff;
+}
+
+.dark .modern-layout-container .horseAptitudeSelect > ul,
+.dark .modern-layout-container .horseMoodSelect > ul {
+    background: rgba(16,16,16,0.95);
+    border-color: rgba(255,255,255,0.15);
+}
+
+.dark .modern-layout-container .horseMoodSelect > ul > li:hover {
+    background: rgba(255,255,255,0.1);
 }
 
 /* --- Dark Mode Color Fixes for Legacy Components --- */
