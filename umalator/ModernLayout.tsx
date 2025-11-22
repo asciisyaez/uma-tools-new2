@@ -51,7 +51,7 @@ export function ModernLayout(props: LayoutProps) {
             <IntlProvider definition={strings}>
                 <div className="modern-layout-container">
                     <div className="main-content-row">
-                        <div className="uma-column" data-pane="UmaPane">
+                        <div className="pane-column" data-pane="UmaPane">
                             <div className="glass-panel uma-panel">
                                 <div className={!expanded && currentIdx == 0 ? 'selected-tab-content' : 'hidden-tab-content'}>
                                     <HorseDef key={uma1.outfitId} state={uma1} setState={setUma1} courseDistance={course.distance} tabstart={() => 4} onResetAll={resetAllUmas}>

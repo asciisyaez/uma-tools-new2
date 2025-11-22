@@ -9,7 +9,6 @@
     margin: 0 auto;
     color: var(--text-primary);
     box-sizing: border-box;
-    overflow-x: hidden;
 }
 
 /* Glass Panel Base */
@@ -36,7 +35,7 @@
 /* Layout Structure: Side-by-Side Priority */
 .main-content-row {
     display: grid;
-    grid-template-columns: 400px 1fr;
+	grid-template-columns: 600px 1fr;
     gap: 20px;
     align-items: start;
     width: 100%;
@@ -44,7 +43,7 @@
     min-width: 0;
 }
 
-.uma-column,
+.pane-column,
 .track-column {
     display: flex;
     flex-direction: column;
@@ -52,7 +51,7 @@
     min-width: 0;
 }
 
-.uma-column {
+.pane-column {
     /* Width controlled by grid */
     box-sizing: border-box;
     /* Explicitly remove any flex constraints that might linger */
@@ -76,7 +75,7 @@
 }
 
 .track-column .glass-panel,
-.uma-column .glass-panel {
+.pane-column .glass-panel {
     width: 100%;
 }
 
@@ -368,7 +367,7 @@
         grid-template-columns: 1fr;
     }
 
-    .uma-column,
+	.pane-column,
     .track-column {
         width: 100%;
         max-width: 100%;
