@@ -515,6 +515,6 @@
     border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
-.dark svg:not(.racetrackView) text {
+.dark .modern-layout-container .pane-column svg text {
     fill: #e0e0e0;
 }
