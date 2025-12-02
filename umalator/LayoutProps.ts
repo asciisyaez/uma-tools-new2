@@ -1,4 +1,6 @@
-import { StateUpdater } from 'preact/hooks';
+import { Inputs } from 'preact/hooks';
+
+type StateUpdater<T> = (value: T | ((prevState: T) => T)) => void;
 import { RaceParameters } from '../uma-skill-tools/RaceParameters';
 import { HorseState } from '../components/HorseDefTypes';
 import { PosKeepMode } from '../uma-skill-tools/RaceSolver';
@@ -18,7 +20,7 @@ export interface LayoutProps {
     rushedIndicators: any[];
     posKeepLabels: any[];
     posKeepMode: PosKeepMode;
-    
+
     // Horses & Pacer
     uma1: HorseState;
     setUma1: StateUpdater<HorseState>;
@@ -35,7 +37,7 @@ export interface LayoutProps {
     racedef: any; // RaceParams
     racesetter: (prop: string) => (value: any) => void;
     setRaceDef: StateUpdater<any>;
-    
+
     // Simulation Controls
     mode: number; // Mode enum
     updateUiState: (msg: number) => void;
@@ -57,7 +59,7 @@ export interface LayoutProps {
     showLanes: boolean;
     toggleShowLanes: () => void;
     showVirtualPacemakerOnGraph: boolean;
-    
+
     // Pacemaker Settings
     pacemakerCount: number;
     handlePacemakerCountChange: (n: number) => void;
@@ -98,9 +100,9 @@ export interface LayoutProps {
 
     // Results
     resultsContent: any; // The rendered results pane (minus IntroText)
-    
+
     // Popovers
     popoverSkill: string;
     tableData: any;
+    progress: { current: number; total: number };
 }
-

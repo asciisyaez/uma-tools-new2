@@ -770,6 +770,7 @@ function App(props) {
 	const [posKeepMode, setPosKeepModeRaw] = useState(PosKeepMode.Approximate);
 	const [showHp, toggleShowHp] = useReducer((b, _) => !b, false);
 	const [showLanes, toggleShowLanes] = useReducer((b, _) => !b, false);
+	const [progress, setProgress] = useState({ current: 0, total: 0 });
 
 	useEffect(() => { document.documentElement.classList.toggle('dark', darkMode); }, [darkMode]);
 
@@ -897,31 +898,47 @@ function App(props) {
 		updateUiState(UiStateMsg.ToggleExpand);
 	}
 
-	const [worker1, worker2] = [1, 2].map(_ => useMemo(() => {
-		const w = new Worker('./simulator.worker.js');
-		w.addEventListener('message', function (e) {
-			const { type, results } = e.data;
-			switch (type) {
-				case 'compare':
-					setResults(results);
-					break;
-				case 'chart':
-					updateTableData(results);
-					break;
-				case 'compare-complete':
-					setIsSimulationRunning(false);
-					break;
-				case 'chart-complete':
-					chartWorkersCompletedRef.current += 1;
-					if (chartWorkersCompletedRef.current >= 2) {
+	const worker1Ref = useRef<Worker | null>(null);
+	const worker2Ref = useRef<Worker | null>(null);
+
+	useEffect(() => {
+		const createWorker = () => {
+			const w = new Worker('./simulator.worker.js');
+			w.addEventListener('message', function (e) {
+				const { type, results, progress, total } = e.data;
+				switch (type) {
+					case 'compare':
+						if (progress !== undefined) {
+							setProgress({ current: progress, total });
+						}
+						if (results) setResults(results);
+						break;
+					case 'chart':
+						updateTableData(results);
+						break;
+					case 'compare-complete':
 						setIsSimulationRunning(false);
-						chartWorkersCompletedRef.current = 0;
-					}
-					break;
-			}
-		});
-		return w;
-	}, []));
+						break;
+					case 'chart-complete':
+						chartWorkersCompletedRef.current += 1;
+						if (chartWorkersCompletedRef.current >= 2) {
+							setIsSimulationRunning(false);
+							chartWorkersCompletedRef.current = 0;
+						}
+						break;
+				}
+			});
+			return w;
+		};
+
+		worker1Ref.current = createWorker();
+		worker2Ref.current = createWorker();
+
+		return () => {
+			worker1Ref.current?.terminate();
+			worker2Ref.current?.terminate();
+		};
+	}, []);
 
 	function loadState() {
 		if (window.location.hash) {
@@ -1063,7 +1080,8 @@ function App(props) {
 	function doComparison() {
 		postEvent('doComparison', {});
 		setIsSimulationRunning(true);
-		worker1.postMessage({
+		setProgress({ current: 0, total: nsamples });
+		worker1Ref.current?.postMessage({
 			msg: 'compare',
 			data: {
 				nsamples,
@@ -1094,9 +1112,10 @@ function App(props) {
 	function doRunOnce() {
 		postEvent('doRunOnce', {});
 		setIsSimulationRunning(true);
+		setProgress({ current: 0, total: 1 });
 		const effectiveSeed = seed + runOnceCounter;
 		setRunOnceCounter(prev => prev + 1);
-		worker1.postMessage({
+		worker1Ref.current?.postMessage({
 			msg: 'compare',
 			data: {
 				nsamples: 1,
@@ -1160,7 +1179,7 @@ function App(props) {
 		const skills2 = skills.slice(Math.floor(skills.length / 2));
 		updateTableData('reset');
 		updateTableData(filler);
-		worker1.postMessage({
+		worker1Ref.current?.postMessage({
 			msg: 'chart',
 			data: {
 				skills: skills1, course, racedef: params, uma, pacer: pacer.toJS(), options: {
@@ -1180,7 +1199,7 @@ function App(props) {
 				}
 			}
 		});
-		worker2.postMessage({
+		worker2Ref.current?.postMessage({
 			msg: 'chart',
 			data: {
 				skills: skills2, course, racedef: params, uma, pacer: pacer.toJS(),
@@ -1599,7 +1618,8 @@ function App(props) {
 			toggleRushedUma1, toggleRushedUma2, toggleDownhillUma1, toggleDownhillUma2,
 			toggleSectionModifierUma1, toggleSectionModifierUma2, toggleSkillCheckChanceUma1, toggleSkillCheckChanceUma2
 		},
-		expanded, toggleExpand, currentIdx, resultsContent: resultsPane, popoverSkill, tableData
+		expanded, toggleExpand, currentIdx, resultsContent: resultsPane, popoverSkill, tableData,
+		progress
 	};
 
 	return (
