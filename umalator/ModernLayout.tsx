@@ -21,9 +21,9 @@ import './ModernLayout.css';
 export function ModernLayout(props: LayoutProps) {
     // #region agent log
     try {
-        fetch('http://127.0.0.1:7242/ingest/55378581-5a28-41f0-af92-85de3c6247dc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'umalator/ModernLayout.tsx:22',message:'ModernLayout Render Start',data:{width:window.innerWidth, mode: props.mode},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'hyp_stale_deploy'})}).catch(()=>{});
-        console.log('ModernLayout v2.1 rendering', {width: window.innerWidth});
-    } catch (e) {}
+        fetch('http://127.0.0.1:7242/ingest/55378581-5a28-41f0-af92-85de3c6247dc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'umalator/ModernLayout.tsx:22', message: 'ModernLayout Render Start', data: { width: window.innerWidth, mode: props.mode }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'hyp_stale_deploy' }) }).catch(() => { });
+        console.log('ModernLayout v2.1 rendering', { width: window.innerWidth });
+    } catch (e) { }
     // #endregion
     const {
         lang, strings, courseId, setCourseId, course, chartData, rtMouseMove, rtMouseLeave, handleSkillDrag,
@@ -35,7 +35,8 @@ export function ModernLayout(props: LayoutProps) {
         pacemakerCount, handlePacemakerCountChange, selectedPacemakerIndices, togglePacemakerSelection,
         isPacemakerDropdownOpen, setIsPacemakerDropdownOpen, getSelectedPacemakers,
         simWitVariance, handleSimWitVarianceToggle, showWitVarianceSettings, setShowWitVarianceSettings,
-        witVarianceProps, expanded, toggleExpand, currentIdx, resultsContent, popoverSkill, tableData
+        witVarianceProps, expanded, toggleExpand, currentIdx, resultsContent, popoverSkill, tableData,
+        progress
     } = props;
 
     const umaTabs = (
@@ -58,7 +59,7 @@ export function ModernLayout(props: LayoutProps) {
                                         {expanded ? 'Umamusume 1' : umaTabs}
                                     </HorseDef>
                                 </div>
-                                
+
                                 {expanded && (
                                     <div className="uma-copy-controls">
                                         <button className="glass-button icon-only" title="Copy uma 1 to uma 2" onClick={copyUmaToRight}>→</button>
@@ -120,10 +121,14 @@ export function ModernLayout(props: LayoutProps) {
 
                                         <div className="action-buttons">
                                             {mode == Mode.Compare
-                                                ? <button className="glass-button primary" onClick={doComparison} disabled={isSimulationRunning}>COMPARE</button>
+                                                ? <button className="glass-button primary" onClick={doComparison} disabled={isSimulationRunning}>
+                                                    {isSimulationRunning && progress.total > 0
+                                                        ? `Running (${Math.round(progress.current / progress.total * 100)}%)`
+                                                        : 'COMPARE'}
+                                                </button>
                                                 : <button className="glass-button primary" onClick={doBasinnChart} disabled={isSimulationRunning}>RUN</button>
                                             }
-                                            {mode == Mode.Compare && 
+                                            {mode == Mode.Compare &&
                                                 <button className="glass-button secondary" onClick={doRunOnce} disabled={isSimulationRunning}>Run Once</button>
                                             }
                                         </div>
@@ -162,8 +167,8 @@ export function ModernLayout(props: LayoutProps) {
                                                     >
                                                         {selectedPacemakerIndices.length === 0 ? 'None' :
                                                             selectedPacemakerIndices.length === 1 ? `Pacemaker ${selectedPacemakerIndices[0] + 1}` :
-                                                            selectedPacemakerIndices.length === pacemakerCount ? 'All Pacemakers' :
-                                                            `${selectedPacemakerIndices.length} Pacemakers`}
+                                                                selectedPacemakerIndices.length === pacemakerCount ? 'All Pacemakers' :
+                                                                    `${selectedPacemakerIndices.length} Pacemakers`}
                                                         <span className="arrow">▼</span>
                                                     </button>
                                                     {isPacemakerDropdownOpen && (
@@ -200,7 +205,7 @@ export function ModernLayout(props: LayoutProps) {
                                                 <button className="icon-button settings-btn" onClick={() => setShowWitVarianceSettings(true)} disabled={!simWitVariance} title="Configure">⚙️</button>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="meta-actions">
                                             <button className="text-button" onClick={copyStateUrl}>Copy Link</button>
                                             <RacePresets set={(courseId, racedef) => { setCourseId(courseId); setRaceDef(racedef); }} />
@@ -263,7 +268,7 @@ export function ModernLayout(props: LayoutProps) {
                     )}
 
                     {popoverSkill && <BasinnChartPopover skillid={popoverSkill} results={tableData.get(popoverSkill).results} courseDistance={course.distance} />}
-                    
+
                     <WitVarianceSettingsPopup
                         show={showWitVarianceSettings}
                         onClose={() => setShowWitVarianceSettings(false)}
@@ -274,4 +279,3 @@ export function ModernLayout(props: LayoutProps) {
         </Language.Provider>
     );
 }
-
