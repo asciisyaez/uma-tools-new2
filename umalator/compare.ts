@@ -11,6 +11,8 @@ import { HorseState } from '../components/HorseDefTypes';
 import skilldata from '../uma-skill-tools/data/skill_data.json';
 import { Rule30CARng } from '../uma-skill-tools/Random';
 
+declare const CC_GLOBAL: boolean;
+
 // Calculate theoretical max spurt based purely on stats (no RNG)
 function calculateTheoreticalMaxSpurt(horse: any, course: CourseData, ground: GroundCondition): {
 	canMaxSpurt: boolean,
@@ -34,26 +36,26 @@ function calculateTheoreticalMaxSpurt(horse: any, course: CourseData, ground: Gr
 		[1.063, 0.962, 0.95]
 	];
 	const DistanceProficiencyModifier = [1.05, 1.0, 0.9, 0.8, 0.6, 0.4, 0.2, 0.1];
-	
+
 	// Parse strategy and aptitude from strings to numeric enums if needed
 	const strategy = parseStrategy(horse.strategy);
 	const distanceAptitude = parseAptitude(horse.distanceAptitude, 'distance');
-	
+
 	const baseSpeed = 20.0 - (course.distance - 2000) / 1000.0;
 	const maxHp = 0.8 * HpStrategyCoefficient[strategy] * horse.stamina + course.distance;
 	const groundModifier = HpConsumptionGroundModifier[course.surface][ground];
 	const gutsModifier = 1.0 + 200.0 / Math.sqrt(600.0 * horse.guts);
-	
+
 	// Calculate base target speed for phase 2
 	const baseTargetSpeed2 = baseSpeed * StrategyPhaseCoefficient[strategy][2] +
 		Math.sqrt(500.0 * horse.speed) * DistanceProficiencyModifier[distanceAptitude] * 0.002;
-	
+
 	// Calculate max spurt speed
 	const maxSpurtSpeed = (baseSpeed * (StrategyPhaseCoefficient[strategy][2] + 0.01) +
 		Math.sqrt(horse.speed / 500.0) * DistanceProficiencyModifier[distanceAptitude]) * 1.05 +
 		Math.sqrt(500.0 * horse.speed) * DistanceProficiencyModifier[distanceAptitude] * 0.002 +
 		Math.pow(450.0 * horse.guts, 0.597) * 0.0001;
-	
+
 	// Calculate HP consumption for the entire race
 	// Phase 0: 0 to 1/6 of course (acceleration phase)
 	const phase0Distance = course.distance / 6;
@@ -61,33 +63,33 @@ function calculateTheoreticalMaxSpurt(horse: any, course: CourseData, ground: Gr
 	const phase0HpPerSec = 20.0 * Math.pow(phase0Speed - baseSpeed + 12.0, 2) / 144.0 * groundModifier;
 	const phase0Time = phase0Distance / phase0Speed;
 	const phase0Hp = phase0HpPerSec * phase0Time;
-	
+
 	// Phase 1: 1/6 to 2/3 of course (middle phase)
 	const phase1Distance = course.distance * 2 / 3 - phase0Distance;
 	const phase1Speed = baseSpeed * StrategyPhaseCoefficient[strategy][1];
 	const phase1HpPerSec = 20.0 * Math.pow(phase1Speed - baseSpeed + 12.0, 2) / 144.0 * groundModifier;
 	const phase1Time = phase1Distance / phase1Speed;
 	const phase1Hp = phase1HpPerSec * phase1Time;
-	
+
 	// Phase 2: 2/3 to finish (spurt phase)
 	const spurtEntryPos = course.distance * 2 / 3;
 	const remainingDistance = course.distance - spurtEntryPos;
 	const spurtDistance = remainingDistance - 60; // 60m buffer
-	
+
 	// HP consumption during spurt at max speed
 	const spurtHpPerSec = 20.0 * Math.pow(maxSpurtSpeed - baseSpeed + 12.0, 2) / 144.0 * groundModifier * gutsModifier;
 	const spurtTime = spurtDistance / maxSpurtSpeed;
 	const spurtHp = spurtHpPerSec * spurtTime;
-	
+
 	// Total HP needed for the entire race with max spurt
 	const totalHpNeeded = phase0Hp + phase1Hp + spurtHp;
-	
+
 	// HP remaining after race (can be negative if horse runs out)
 	const hpRemaining = maxHp - totalHpNeeded;
-	
+
 	// Can max spurt if we have enough HP
 	const canMaxSpurt = hpRemaining >= 0;
-	
+
 	return {
 		canMaxSpurt,
 		maxHp,
@@ -98,256 +100,297 @@ function calculateTheoreticalMaxSpurt(horse: any, course: CourseData, ground: Gr
 	};
 }
 
-export function runComparison(nsamples: number, course: CourseData, racedef: RaceParameters, uma1: HorseState, uma2: HorseState, pacer: HorseState, options) {
-	// Pre-calculate heal skills from uma's skill lists before race starts
-	const uma1HealSkills = [];
-	const uma2HealSkills = [];
-	
-	uma1.skills.forEach(skillId => {
-		const skill = skilldata[skillId.split('-')[0]];
-		if (skill && skill.alternatives) {
-			skill.alternatives.forEach(alt => {
-				if (alt.effects) {
-					alt.effects.forEach(effect => {
-						if (effect.type === 9) { // Recovery/Heal skill
-							uma1HealSkills.push({
-								id: skillId,
-								heal: effect.modifier,
-								duration: alt.baseDuration || 0
-							});
-						}
-					});
-				}
-			});
-		}
-	});
-	
-	uma2.skills.forEach(skillId => {
-		const skill = skilldata[skillId.split('-')[0]];
-		if (skill && skill.alternatives) {
-			skill.alternatives.forEach(alt => {
-				if (alt.effects) {
-					alt.effects.forEach(effect => {
-						if (effect.type === 9) { // Recovery/Heal skill
-							uma2HealSkills.push({
-								id: skillId,
-								heal: effect.modifier,
-								duration: alt.baseDuration || 0
-							});
-						}
-					});
-				}
-			});
-		}
-	});
-	
-	const standard = new RaceSolverBuilder(nsamples)
-		.seed(options.seed)
-		.course(course)
-		.ground(racedef.groundCondition)
-		.weather(racedef.weather)
-		.season(racedef.season)
-		.time(racedef.time)
-		.useEnhancedSpurt(options.useEnhancedSpurt || false)
-		.accuracyMode(options.accuracyMode || false)
-		.posKeepMode(options.posKeepMode)
-		.mode(options.mode);
-	if (racedef.orderRange != null) {
-		standard
-			.order(racedef.orderRange[0], racedef.orderRange[1])
-			.numUmas(racedef.numUmas);
-	}
-	// Fork to share RNG - both horses face the same random events for fair comparison
-	const compare = standard.fork();
-	
-	if (options.mode === 'compare') {
-		standard.desync();
-	}
-	
-	standard.horse(uma1.toJS());
-	compare.horse(uma2.toJS());
-	
-	// Apply rushed toggles
-	if (options.allowRushedUma1 === false) {
-		standard.disableRushed();
-	}
-	if (options.allowRushedUma2 === false) {
-		compare.disableRushed();
-	}
-	
-	// Apply downhill toggles
-	if (options.allowDownhillUma1 === false) {
-		standard.disableDownhill();
-	}
-	if (options.allowDownhillUma2 === false) {
-		compare.disableDownhill();
-	}
-	
-	if (options.allowSectionModifierUma1 === false) {
-		standard.disableSectionModifier();
-	}
-	if (options.allowSectionModifierUma2 === false) {
-		compare.disableSectionModifier();
-	}
-	
-	// Apply skill check chance toggle
-	if (options.skillCheckChanceUma1 === false) {
-		standard.skillCheckChance(false);
-	}
-	if (options.skillCheckChanceUma2 === false) {
-		compare.skillCheckChance(false);
-	}
-	// ensure skills common to the two umas are added in the same order regardless of what additional skills they have
-	// this is important to make sure the rng for their activations is synced
-	const common = uma1.skills.intersect(uma2.skills).toArray().sort((a,b) => +a - +b);
-	const commonIdx = (id) => { let i = common.indexOf(id); return i > -1 ? i : common.length; };
-	const sort = (a,b) => commonIdx(a) - commonIdx(b) || +a - +b;
-	
-	const uma1Horse = uma1.toJS();
-	const uma1BaseStats = buildBaseStats(uma1Horse, uma1Horse.mood);
-	const uma1AdjustedStats = buildAdjustedStats(uma1BaseStats, course, racedef.groundCondition);
-	const uma1Wisdom = uma1AdjustedStats.wisdom;
-	
-	const uma2Horse = uma2.toJS();
-	const uma2BaseStats = buildBaseStats(uma2Horse, uma2Horse.mood);
-	const uma2AdjustedStats = buildAdjustedStats(uma2BaseStats, course, racedef.groundCondition);
-	const uma2Wisdom = uma2AdjustedStats.wisdom;
-	
-	uma1.skills.toArray().sort(sort).forEach(id => {
-		const skillId = id.split('-')[0];
-		const forcedPos = uma1.forcedSkillPositions.get(id);
-		if (forcedPos != null) {
-			standard.addSkillAtPosition(skillId, forcedPos, Perspective.Self);
-			compare.addSkill(skillId, Perspective.Other, undefined, uma1Wisdom);
-		} else {
-			standard.addSkill(skillId, Perspective.Self);
-			compare.addSkill(skillId, Perspective.Other, undefined, uma1Wisdom);
-		}
-	});
-	uma2.skills.toArray().sort(sort).forEach(id => {
-		const skillId = id.split('-')[0];
-		const forcedPos = uma2.forcedSkillPositions.get(id);
-		if (forcedPos != null) {
-			compare.addSkillAtPosition(skillId, forcedPos, Perspective.Self);
-			standard.addSkill(skillId, Perspective.Other, undefined, uma2Wisdom);
-		} else {
-			compare.addSkill(skillId, Perspective.Self);
-			standard.addSkill(skillId, Perspective.Other, undefined, uma2Wisdom);
-		}
-	});
-	if (!CC_GLOBAL) {
-		standard.withAsiwotameru().withStaminaSyoubu();
-		compare.withAsiwotameru().withStaminaSyoubu();
-	}
+export class ComparisonSession {
+	private standard: RaceSolverBuilder;
+	private compare: RaceSolverBuilder;
+	private a: Generator<RaceSolver, void, boolean>;
+	private b: Generator<RaceSolver, void, boolean>;
+	private ai: number = 1;
+	private bi: number = 0;
+	private sign: number = 1;
+	private diff: number[] = [];
+	private min: number = Infinity;
+	private max: number = -Infinity;
+	private minrun: any;
+	private maxrun: any;
+	private meanrun: any;
+	private medianrun: any;
+	private estMean: number;
+	private estMedian: number;
+	private bestMeanDiff: number = Infinity;
+	private bestMedianDiff: number = Infinity;
+	private sampleCutoff: number;
+	private retry: boolean = false;
+	private rushedStats: any;
+	private leadCompetitionStats: any;
+	private staminaStats: any;
+	private firstUmaStats: any;
+	private aIsUma1: boolean = true;
+	private basePacerRng: Rule30CARng;
+	private pacers: RaceSolverBuilder[] = [];
+	private options: any;
+	private course: CourseData;
+	private nsamples: number;
+	private pacerHorse: any;
+	private skillPos1: Map<string, any> = new Map();
+	private skillPos2: Map<string, any> = new Map();
 
-	let pacerHorse = null;
+	constructor(nsamples: number, course: CourseData, racedef: RaceParameters, uma1: HorseState, uma2: HorseState, pacer: HorseState, options: any) {
+		this.nsamples = nsamples;
+		this.course = course;
+		this.options = options;
 
-	if (options.posKeepMode === PosKeepMode.Approximate) {
-		pacerHorse = standard.useDefaultPacer(true);
-	} 
-	else if (options.posKeepMode === PosKeepMode.Virtual) {
-		if (pacer) {
-			const pacerConfig = pacer.toJS ? pacer.toJS() : pacer;
-			pacerHorse = standard.pacer(pacerConfig);
+		// Pre-calculate heal skills from uma's skill lists before race starts
+		const uma1HealSkills = [];
+		const uma2HealSkills = [];
 
-			if (pacerConfig.skills && Array.isArray(pacerConfig.skills) && pacerConfig.skills.length > 0) {
-				pacerConfig.skills.forEach((skillId: string) => {
-					const cleanSkillId = skillId.split('-')[0];
-					standard.addPacerSkill(cleanSkillId);
+		uma1.skills.forEach(skillId => {
+			const skill = skilldata[skillId.split('-')[0]];
+			if (skill && skill.alternatives) {
+				skill.alternatives.forEach(alt => {
+					if (alt.effects) {
+						alt.effects.forEach(effect => {
+							if (effect.type === 9) { // Recovery/Heal skill
+								uma1HealSkills.push({
+									id: skillId,
+									heal: effect.modifier,
+									duration: alt.baseDuration || 0
+								});
+							}
+						});
+					}
 				});
 			}
-		}
-		else {
-			pacerHorse = standard.useDefaultPacer();
-		}
-	}
-	
-	const skillPos1 = new Map(), skillPos2 = new Map();
-	function getActivator(selfSet, otherSet) {
-		return function (s, id, persp) {
-			const skillSet = persp == Perspective.Self ? selfSet : otherSet;
-			if (id != 'asitame' && id != 'staminasyoubu') {
-				if (!skillSet.has(id)) skillSet.set(id, []);
-				skillSet.get(id).push([s.pos, s.pos]);  // Initialize with same position for instant skills
+		});
+
+		uma2.skills.forEach(skillId => {
+			const skill = skilldata[skillId.split('-')[0]];
+			if (skill && skill.alternatives) {
+				skill.alternatives.forEach(alt => {
+					if (alt.effects) {
+						alt.effects.forEach(effect => {
+							if (effect.type === 9) { // Recovery/Heal skill
+								uma2HealSkills.push({
+									id: skillId,
+									heal: effect.modifier,
+									duration: alt.baseDuration || 0
+								});
+							}
+						});
+					}
+				});
 			}
-		};
+		});
+
+		this.standard = new RaceSolverBuilder(nsamples)
+			.seed(options.seed)
+			.course(course)
+			.ground(racedef.groundCondition)
+			.weather(racedef.weather)
+			.season(racedef.season)
+			.time(racedef.time)
+			.useEnhancedSpurt(options.useEnhancedSpurt || false)
+			.accuracyMode(options.accuracyMode || false)
+			.posKeepMode(options.posKeepMode)
+			.mode(options.mode);
+		if (racedef.orderRange != null) {
+			this.standard
+				.order(racedef.orderRange[0], racedef.orderRange[1])
+				.numUmas(racedef.numUmas);
+		}
+		// Fork to share RNG - both horses face the same random events for fair comparison
+		this.compare = this.standard.fork();
+
+		if (options.mode === 'compare') {
+			this.standard.desync();
+		}
+
+		this.standard.horse(uma1.toJS());
+		this.compare.horse(uma2.toJS());
+
+		// Apply rushed toggles
+		if (options.allowRushedUma1 === false) {
+			this.standard.disableRushed();
+		}
+		if (options.allowRushedUma2 === false) {
+			this.compare.disableRushed();
+		}
+
+		// Apply downhill toggles
+		if (options.allowDownhillUma1 === false) {
+			this.standard.disableDownhill();
+		}
+		if (options.allowDownhillUma2 === false) {
+			this.compare.disableDownhill();
+		}
+
+		if (options.allowSectionModifierUma1 === false) {
+			this.standard.disableSectionModifier();
+		}
+		if (options.allowSectionModifierUma2 === false) {
+			this.compare.disableSectionModifier();
+		}
+
+		// Apply skill check chance toggle
+		if (options.skillCheckChanceUma1 === false) {
+			this.standard.skillCheckChance(false);
+		}
+		if (options.skillCheckChanceUma2 === false) {
+			this.compare.skillCheckChance(false);
+		}
+		// ensure skills common to the two umas are added in the same order regardless of what additional skills they have
+		// this is important to make sure the rng for their activations is synced
+		const common = uma1.skills.intersect(uma2.skills).toArray().sort((a, b) => +a - +b);
+		const commonIdx = (id) => { let i = common.indexOf(id); return i > -1 ? i : common.length; };
+		const sort = (a, b) => commonIdx(a) - commonIdx(b) || +a - +b;
+
+		const uma1Horse = uma1.toJS();
+		const uma1BaseStats = buildBaseStats(uma1Horse, uma1Horse.mood);
+		const uma1AdjustedStats = buildAdjustedStats(uma1BaseStats, course, racedef.groundCondition);
+		const uma1Wisdom = uma1AdjustedStats.wisdom;
+
+		const uma2Horse = uma2.toJS();
+		const uma2BaseStats = buildBaseStats(uma2Horse, uma2Horse.mood);
+		const uma2AdjustedStats = buildAdjustedStats(uma2BaseStats, course, racedef.groundCondition);
+		const uma2Wisdom = uma2AdjustedStats.wisdom;
+
+		uma1.skills.toArray().sort(sort).forEach((id: string) => {
+			const skillId = id.split('-')[0];
+			const forcedPos = uma1.forcedSkillPositions.get(id);
+			if (forcedPos != null) {
+				this.standard.addSkillAtPosition(skillId, forcedPos, Perspective.Self);
+				this.compare.addSkill(skillId, Perspective.Other, undefined, uma1Wisdom);
+			} else {
+				this.standard.addSkill(skillId, Perspective.Self);
+				this.compare.addSkill(skillId, Perspective.Other, undefined, uma1Wisdom);
+			}
+		});
+		uma2.skills.toArray().sort(sort).forEach((id: string) => {
+			const skillId = id.split('-')[0];
+			const forcedPos = uma2.forcedSkillPositions.get(id);
+			if (forcedPos != null) {
+				this.compare.addSkillAtPosition(skillId, forcedPos, Perspective.Self);
+				this.standard.addSkill(skillId, Perspective.Other, undefined, uma2Wisdom);
+			} else {
+				this.compare.addSkill(skillId, Perspective.Self);
+				this.standard.addSkill(skillId, Perspective.Other, undefined, uma2Wisdom);
+			}
+		});
+	});
+	if(typeof CC_GLOBAL !== 'undefined' && !CC_GLOBAL) {
+	this.standard.withAsiwotameru().withStaminaSyoubu();
+	this.compare.withAsiwotameru().withStaminaSyoubu();
+}
+
+if (options.posKeepMode === PosKeepMode.Approximate) {
+	this.pacerHorse = this.standard.useDefaultPacer(true);
+}
+else if (options.posKeepMode === PosKeepMode.Virtual) {
+	if (pacer) {
+		const pacerConfig = pacer.toJS ? pacer.toJS() : pacer;
+		this.pacerHorse = this.standard.pacer(pacerConfig);
+
+		if (pacerConfig.skills && Array.isArray(pacerConfig.skills) && pacerConfig.skills.length > 0) {
+			pacerConfig.skills.forEach((skillId: string) => {
+				const cleanSkillId = skillId.split('-')[0];
+				this.standard.addPacerSkill(cleanSkillId);
+			});
+		}
 	}
-	function getDeactivator(selfSet, otherSet) {
+	else {
+		this.pacerHorse = this.standard.useDefaultPacer();
+	}
+}
+
+const getActivator = (selfSet, otherSet) => {
+	return function (s, id, persp) {
+		const skillSet = persp == Perspective.Self ? selfSet : otherSet;
+		if (id != 'asitame' && id != 'staminasyoubu') {
+			if (!skillSet.has(id)) skillSet.set(id, []);
+			skillSet.get(id).push([s.pos, s.pos]);  // Initialize with same position for instant skills
+		}
+	};
+};
+const getDeactivator = (selfSet, otherSet) => {
+	return function (s, id, persp) {
+		const skillSet = persp == Perspective.Self ? selfSet : otherSet;
+		if (id != 'asitame' && id != 'staminasyoubu') {
+			const ar = skillSet.get(id);  // activation record
+			if (ar && ar.length > 0) {
+				// Only update if this is a duration skill (position has moved)
+				const activationPos = ar[ar.length - 1][0];
+				if (s.pos > activationPos) {
+					ar[ar.length - 1][1] = Math.min(s.pos, course.distance);
+				}
+			}
+		}
+	};
+};
+this.standard.onSkillActivate(getActivator(this.skillPos1, this.skillPos2));
+this.standard.onSkillDeactivate(getDeactivator(this.skillPos1, this.skillPos2));
+this.compare.onSkillActivate(getActivator(this.skillPos2, this.skillPos1));
+this.compare.onSkillDeactivate(getDeactivator(this.skillPos2, this.skillPos1));
+this.a = this.standard.build();
+this.b = this.compare.build();
+
+this.sampleCutoff = Math.max(Math.floor(nsamples * 0.8), nsamples - 200);
+
+// Track rushed statistics across all simulations
+this.rushedStats = {
+	uma1: { lengths: [], count: 0 },
+	uma2: { lengths: [], count: 0 }
+};
+
+this.leadCompetitionStats = {
+	uma1: { lengths: [], count: 0 },
+	uma2: { lengths: [], count: 0 }
+};
+
+// Track stamina survival and full spurt statistics
+this.staminaStats = {
+	uma1: { hpDiedCount: 0, fullSpurtCount: 0, total: 0 },
+	uma2: { hpDiedCount: 0, fullSpurtCount: 0, total: 0 }
+};
+
+this.firstUmaStats = {
+	uma1: { firstPlaceCount: 0, total: 0 },
+	uma2: { firstPlaceCount: 0, total: 0 }
+};
+
+this.basePacerRng = new Rule30CARng(options.seed + 1);
+	}
+
+run(count: number) {
+	const getDeactivator = (selfSet, otherSet) => {
 		return function (s, id, persp) {
 			const skillSet = persp == Perspective.Self ? selfSet : otherSet;
 			if (id != 'asitame' && id != 'staminasyoubu') {
 				const ar = skillSet.get(id);  // activation record
 				if (ar && ar.length > 0) {
 					// Only update if this is a duration skill (position has moved)
-					const activationPos = ar[ar.length-1][0];
+					const activationPos = ar[ar.length - 1][0];
 					if (s.pos > activationPos) {
-						ar[ar.length-1][1] = Math.min(s.pos, course.distance);
+						ar[ar.length - 1][1] = Math.min(s.pos, this.course.distance);
 					}
 				}
 			}
 		};
-	}
-	standard.onSkillActivate(getActivator(skillPos1, skillPos2));
-	standard.onSkillDeactivate(getDeactivator(skillPos1, skillPos2));
-	compare.onSkillActivate(getActivator(skillPos2, skillPos1));
-	compare.onSkillDeactivate(getDeactivator(skillPos2, skillPos1));
-	let a = standard.build(), b = compare.build();
-	let ai = 1, bi = 0;
-	let sign = 1;
-	const diff = [];
-	let min = Infinity, max = -Infinity, estMean, estMedian, bestMeanDiff = Infinity, bestMedianDiff = Infinity;
-	let minrun, maxrun, meanrun, medianrun;
-	const sampleCutoff = Math.max(Math.floor(nsamples * 0.8), nsamples - 200);
-	let retry = false;
-	let retryCount = 0;
-	
-	// Track rushed statistics across all simulations
-	const rushedStats = {
-		uma1: { lengths: [], count: 0 },
-		uma2: { lengths: [], count: 0 }
 	};
-	
-	const leadCompetitionStats = {
-		uma1: { lengths: [], count: 0 },
-		uma2: { lengths: [], count: 0 }
-	};
-	
-	// Track stamina survival and full spurt statistics
-	const staminaStats = {
-		uma1: { hpDiedCount: 0, fullSpurtCount: 0, total: 0 },
-		uma2: { hpDiedCount: 0, fullSpurtCount: 0, total: 0 }
-	};
-	
-	// Track last spurt 1st place frequency
-	// This is primarily useful for front runners where we want to evaluate how effective
-	// they are at getting angling & scheming
-	//
-	// note: eventually we could also even limit angling & scheming proc to only occur
-	// when the uma is *actually* 1st place in the sim instead of using a probability estimate?
-	const firstUmaStats = {
-		uma1: { firstPlaceCount: 0, total: 0 },
-		uma2: { firstPlaceCount: 0, total: 0 }
-	};
-	
-	// Track which generator corresponds to which uma (flips when we swap generators)
-	let aIsUma1 = true; // 'a' starts as standard builder (uma1)
 
-	let basePacerRng = new Rule30CARng(options.seed + 1);
-	
-	for (let i = 0; i < nsamples; ++i) {
+	for (let i = 0; i < count; ++i) {
 		let pacers = [];
 
-		for (let j = 0; j < options.pacemakerCount; ++j) {
-			let pacerRng = new Rule30CARng(basePacerRng.int32());
-			const pacer: RaceSolver | null = pacerHorse != null ? standard.buildPacer(pacerHorse, i, pacerRng) : null;
+		for (let j = 0; j < this.options.pacemakerCount; ++j) {
+			let pacerRng = new Rule30CARng(this.basePacerRng.int32());
+			const pacer: RaceSolver | null = this.pacerHorse != null ? this.standard.buildPacer(this.pacerHorse, i, pacerRng) : null;
 			pacers.push(pacer);
 		}
 
 		const pacer: RaceSolver | null = pacers.length > 0 ? pacers[0] : null;
 
-		const s1 = a.next(retry).value as RaceSolver;
-		const s2 = b.next(retry).value as RaceSolver;
-		const data = {t: [[], []], p: [[], []], v: [[], []], hp: [[], []], currentLane: [[], []], pacerGap: [[], []], sk: [null,null], sdly: [0,0], rushed: [[], []], posKeep: [[], []], competeFight: [[], []], leadCompetition: [[], []], pacerV: [[], [], []], pacerP: [[], [], []], pacerT: [[], [], []], pacerPosKeep: [[], [], []], pacerLeadCompetition: [[], [], []]};
+		const s1 = this.a.next(this.retry).value as RaceSolver;
+		const s2 = this.b.next(this.retry).value as RaceSolver;
+		const data = { t: [[], []], p: [[], []], v: [[], []], hp: [[], []], currentLane: [[], []], pacerGap: [[], []], sk: [null, null], sdly: [0, 0], rushed: [[], []], posKeep: [[], []], competeFight: [[], []], leadCompetition: [[], []], pacerV: [[], [], []], pacerP: [[], [], []], pacerT: [[], [], []], pacerPosKeep: [[], [], []], pacerLeadCompetition: [[], [], []] };
 
 		s1.initUmas([s2, ...pacers]);
 		s2.initUmas([s1, ...pacers]);
@@ -371,65 +414,65 @@ export function runComparison(nsamples: number, course: CourseData, racedef: Rac
 				});
 			}
 
-			if (s2.pos < course.distance) {
-				data.pacerGap[ai].push(currentPacer ? currentPacer.pos - s2.pos : undefined);
+			if (s2.pos < this.course.distance) {
+				data.pacerGap[this.ai].push(currentPacer ? currentPacer.pos - s2.pos : undefined);
 			}
-			if (s1.pos < course.distance) {
-				data.pacerGap[bi].push(currentPacer ? currentPacer.pos - s1.pos : undefined);
+			if (s1.pos < this.course.distance) {
+				data.pacerGap[this.bi].push(currentPacer ? currentPacer.pos - s1.pos : undefined);
 			}
 
-			for (let j = 0; j < options.pacemakerCount; j++) {
+			for (let j = 0; j < this.options.pacemakerCount; j++) {
 				const p = j < pacers.length ? pacers[j] : null;
-				if (!p || p.pos >= course.distance) continue;
-				p.step(1/15);
+				if (!p || p.pos >= this.course.distance) continue;
+				p.step(1 / 15);
 				data.pacerV[j].push(p ? (p.currentSpeed + (p.modifiers.currentSpeed.acc + p.modifiers.currentSpeed.err)) : undefined);
 				data.pacerP[j].push(p ? p.pos : undefined);
 				data.pacerT[j].push(p ? p.accumulatetime.t : undefined);
 			}
 
-			if (s2.pos < course.distance) {
-				s2.step(1/15);
+			if (s2.pos < this.course.distance) {
+				s2.step(1 / 15);
 
-				data.t[ai].push(s2.accumulatetime.t);
-				data.p[ai].push(s2.pos);
-				data.v[ai].push(s2.currentSpeed + (s2.modifiers.currentSpeed.acc + s2.modifiers.currentSpeed.err));
-				data.hp[ai].push((s2.hp as any).hp);
-				data.currentLane[ai].push(s2.currentLane);
+				data.t[this.ai].push(s2.accumulatetime.t);
+				data.p[this.ai].push(s2.pos);
+				data.v[this.ai].push(s2.currentSpeed + (s2.modifiers.currentSpeed.acc + s2.modifiers.currentSpeed.err));
+				data.hp[this.ai].push((s2.hp as any).hp);
+				data.currentLane[this.ai].push(s2.currentLane);
 			}
 			else if (!s2Finished) {
 				s2Finished = true;
 
-				data.sdly[ai] = s2.startDelay;
-				data.rushed[ai] = s2.rushedActivations.slice();
-				data.posKeep[ai] = s2.positionKeepActivations.slice();
+				data.sdly[this.ai] = s2.startDelay;
+				data.rushed[this.ai] = s2.rushedActivations.slice();
+				data.posKeep[this.ai] = s2.positionKeepActivations.slice();
 				if (s2.competeFightStart != null) {
-					data.competeFight[ai] = [s2.competeFightStart, s2.competeFightEnd != null ? s2.competeFightEnd : course.distance];
+					data.competeFight[this.ai] = [s2.competeFightStart, s2.competeFightEnd != null ? s2.competeFightEnd : this.course.distance];
 				}
 				if (s2.leadCompetitionStart != null) {
-					data.leadCompetition[ai] = [s2.leadCompetitionStart, s2.leadCompetitionEnd != null ? s2.leadCompetitionEnd : course.distance];
+					data.leadCompetition[this.ai] = [s2.leadCompetitionStart, s2.leadCompetitionEnd != null ? s2.leadCompetitionEnd : this.course.distance];
 				}
 			}
 
-			if (s1.pos < course.distance) {
-				s1.step(1/15);
+			if (s1.pos < this.course.distance) {
+				s1.step(1 / 15);
 
-				data.t[bi].push(s1.accumulatetime.t);
-				data.p[bi].push(s1.pos);
-				data.v[bi].push(s1.currentSpeed + (s1.modifiers.currentSpeed.acc + s1.modifiers.currentSpeed.err));
-				data.hp[bi].push((s1.hp as any).hp);
-				data.currentLane[bi].push(s1.currentLane);
+				data.t[this.bi].push(s1.accumulatetime.t);
+				data.p[this.bi].push(s1.pos);
+				data.v[this.bi].push(s1.currentSpeed + (s1.modifiers.currentSpeed.acc + s1.modifiers.currentSpeed.err));
+				data.hp[this.bi].push((s1.hp as any).hp);
+				data.currentLane[this.bi].push(s1.currentLane);
 			}
 			else if (!s1Finished) {
 				s1Finished = true;
 
-				data.sdly[bi] = s1.startDelay;
-				data.rushed[bi] = s1.rushedActivations.slice();
-				data.posKeep[bi] = s1.positionKeepActivations.slice();
+				data.sdly[this.bi] = s1.startDelay;
+				data.rushed[this.bi] = s1.rushedActivations.slice();
+				data.posKeep[this.bi] = s1.positionKeepActivations.slice();
 				if (s1.competeFightStart != null) {
-					data.competeFight[bi] = [s1.competeFightStart, s1.competeFightEnd != null ? s1.competeFightEnd : course.distance];
+					data.competeFight[this.bi] = [s1.competeFightStart, s1.competeFightEnd != null ? s1.competeFightEnd : this.course.distance];
 				}
 				if (s1.leadCompetitionStart != null) {
-					data.leadCompetition[bi] = [s1.leadCompetitionStart, s1.leadCompetitionEnd != null ? s1.leadCompetitionEnd : course.distance];
+					data.leadCompetition[this.bi] = [s1.leadCompetitionStart, s1.leadCompetitionEnd != null ? s1.leadCompetitionEnd : this.course.distance];
 				}
 			}
 
@@ -437,18 +480,18 @@ export function runComparison(nsamples: number, course: CourseData, racedef: Rac
 		}
 
 		// ai took less time to finish (less frames to finish)
-		if (data.p[ai].length <= data.p[bi].length) {
-			let aiFrames = data.p[ai].length;
-			posDifference = data.p[ai][aiFrames - 1] - data.p[bi][aiFrames - 1];
+		if (data.p[this.ai].length <= data.p[this.bi].length) {
+			let aiFrames = data.p[this.ai].length;
+			posDifference = data.p[this.ai][aiFrames - 1] - data.p[this.bi][aiFrames - 1];
 		}
 		else {
-			let biFrames = data.p[bi].length;
-			posDifference = data.p[ai][biFrames - 1] - data.p[bi][biFrames - 1];
+			let biFrames = data.p[this.bi].length;
+			posDifference = data.p[this.ai][biFrames - 1] - data.p[this.bi][biFrames - 1];
 		}
 
 		pacers.forEach(p => {
-			if (p && p.pos < course.distance) {
-				p.step(1/15);
+			if (p && p.pos < this.course.distance) {
+				p.step(1 / 15);
 
 				for (let pacemakerIndex = 0; pacemakerIndex < 3; pacemakerIndex++) {
 					if (pacemakerIndex < pacers.length && pacers[pacemakerIndex] === p) {
@@ -460,11 +503,11 @@ export function runComparison(nsamples: number, course: CourseData, racedef: Rac
 			}
 		});
 
-		for (let j = 0; j < options.pacemakerCount; j++) {
+		for (let j = 0; j < this.options.pacemakerCount; j++) {
 			const p = j < pacers.length ? pacers[j] : null;
 			data.pacerPosKeep[j] = p ? p.positionKeepActivations.slice() : [];
 			if (p && p.leadCompetitionStart != null) {
-				data.pacerLeadCompetition[j] = [p.leadCompetitionStart, p.leadCompetitionEnd != null ? p.leadCompetitionEnd : course.distance];
+				data.pacerLeadCompetition[j] = [p.leadCompetitionStart, p.leadCompetitionEnd != null ? p.leadCompetitionEnd : this.course.distance];
 			} else {
 				data.pacerLeadCompetition[j] = [];
 			}
@@ -479,12 +522,16 @@ export function runComparison(nsamples: number, course: CourseData, racedef: Rac
 				...solver.activeCurrentSpeedSkills,
 				...solver.activeAccelSkills
 			];
-			
+
 			allActiveSkills.forEach(skill => {
 				// Call the deactivator to set the end position to course.distance
 				// This handles both race-end cleanup and very short duration skills
 				// Use the correct skill position maps for this solver
-				getDeactivator(selfSkillSet, otherSkillSet)(solver, skill.skillId, skill.perspective);
+				// NOTE: We need to bind `this` or use the closure properly, but `getDeactivator` is defined in constructor
+				// We redefine it here or make it a method.
+				// Since we need access to `this.course.distance`, it's better to define it inside `run` or as a method.
+				// I've redefined it at the top of `run`.
+				getDeactivator(selfSkillSet, otherSkillSet).call(this, solver, skill.skillId, skill.perspective);
 			});
 		};
 
@@ -492,16 +539,16 @@ export function runComparison(nsamples: number, course: CourseData, racedef: Rac
 		// s1 comes from generator 'a' (standard), s2 comes from generator 'b' (compare)
 		// standard uses skillPos1 for self, skillPos2 for other
 		// compare uses skillPos2 for self, skillPos1 for other
-		cleanupActiveSkills(s1, skillPos1, skillPos2);
-		cleanupActiveSkills(s2, skillPos2, skillPos1);
+		cleanupActiveSkills(s1, this.skillPos1, this.skillPos2);
+		cleanupActiveSkills(s2, this.skillPos2, this.skillPos1);
 
-		data.sk[1] = new Map(skillPos2);  // NOT ai (NB. why not?)
-		skillPos2.clear();
-		data.sk[0] = new Map(skillPos1);  // NOT bi (NB. why not?)
-		skillPos1.clear();
+		data.sk[1] = new Map(this.skillPos2);  // NOT ai (NB. why not?)
+		this.skillPos2.clear();
+		data.sk[0] = new Map(this.skillPos1);  // NOT bi (NB. why not?)
+		this.skillPos1.clear();
 
-		retry = false;
-		
+		this.retry = false;
+
 		// ONLY track stats for valid iterations (after swap check, but BEFORE cleanup)
 		// Key insight: After swaps, s1 and s2 variable names don't tell us which uma they are!
 		// We need to track which BUILDER (a or b) they came from:
@@ -512,20 +559,20 @@ export function runComparison(nsamples: number, course: CourseData, racedef: Rac
 		// BUT: we swapped both the generators AND the indices, so:
 		//   - If aIsUma1, then s1=uma1, s2=uma2
 		//   - After swap: generators swap AND indices swap, so relationship stays same!
-		
+
 		// Actually wait, that's not right either. Let me think...
 		// After [b,a]=[a,b], the generator that WAS producing uma1 is now in variable 'b'
 		// And the generator that WAS producing uma2 is now in variable 'a'
 		// So after swaps, aIsUma1 flips!
-		
+
 		// Determine which uma each solver represents based on current generator state
 		// s1 came from generator 'a': if aIsUma1, then s1 is uma1, else s1 is uma2  
 		// s2 came from generator 'b': if aIsUma1, then s2 is uma2, else s2 is uma1
-		const s1IsUma1 = aIsUma1;
-		const s2IsUma1 = !aIsUma1;
-		
+		const s1IsUma1 = this.aIsUma1;
+		const s2IsUma1 = !this.aIsUma1;
+
 		// Track stats for s1's uma
-		const s1Stats = s1IsUma1 ? staminaStats.uma1 : staminaStats.uma2;
+		const s1Stats = s1IsUma1 ? this.staminaStats.uma1 : this.staminaStats.uma2;
 		s1Stats.total++;
 		if (s1.hpDied) {
 			s1Stats.hpDiedCount++;
@@ -533,9 +580,9 @@ export function runComparison(nsamples: number, course: CourseData, racedef: Rac
 		if (s1.fullSpurt) {
 			s1Stats.fullSpurtCount++;
 		}
-		
+
 		// Track stats for s2's uma
-		const s2Stats = s2IsUma1 ? staminaStats.uma1 : staminaStats.uma2;
+		const s2Stats = s2IsUma1 ? this.staminaStats.uma1 : this.staminaStats.uma2;
 		s2Stats.total++;
 		if (s2.hpDied) {
 			s2Stats.hpDiedCount++;
@@ -543,86 +590,89 @@ export function runComparison(nsamples: number, course: CourseData, racedef: Rac
 		if (s2.fullSpurt) {
 			s2Stats.fullSpurtCount++;
 		}
-		
-		const s1FirstUmaStats = s1IsUma1 ? firstUmaStats.uma1 : firstUmaStats.uma2;
+
+		const s1FirstUmaStats = s1IsUma1 ? this.firstUmaStats.uma1 : this.firstUmaStats.uma2;
 		s1FirstUmaStats.total++;
 		if (s1.firstUmaInLateRace) {
 			s1FirstUmaStats.firstPlaceCount++;
 		}
-		
-		const s2FirstUmaStats = s2IsUma1 ? firstUmaStats.uma1 : firstUmaStats.uma2;
+
+		const s2FirstUmaStats = s2IsUma1 ? this.firstUmaStats.uma1 : this.firstUmaStats.uma2;
 		s2FirstUmaStats.total++;
 		if (s2.firstUmaInLateRace) {
 			s2FirstUmaStats.firstPlaceCount++;
 		}
-		
+
 		// Cleanup AFTER stat tracking
 		s2.cleanup();
 		s1.cleanup();
-		
+
 		// Collect rushed statistics (also based on which uma the solver represents)
 		if (s1.rushedActivations.length > 0) {
 			const [start, end] = s1.rushedActivations[0];
 			const length = end - start;
-			const s1RushedStats = s1IsUma1 ? rushedStats.uma1 : rushedStats.uma2;
+			const s1RushedStats = s1IsUma1 ? this.rushedStats.uma1 : this.rushedStats.uma2;
 			s1RushedStats.lengths.push(length);
 			s1RushedStats.count++;
 		}
 		if (s2.rushedActivations.length > 0) {
 			const [start, end] = s2.rushedActivations[0];
 			const length = end - start;
-			const s2RushedStats = s2IsUma1 ? rushedStats.uma1 : rushedStats.uma2;
+			const s2RushedStats = s2IsUma1 ? this.rushedStats.uma1 : this.rushedStats.uma2;
 			s2RushedStats.lengths.push(length);
 			s2RushedStats.count++;
 		}
-		
+
 		if (s1.leadCompetitionStart != null) {
 			const start = s1.leadCompetitionStart;
-			const end = s1.leadCompetitionEnd != null ? s1.leadCompetitionEnd : course.distance;
+			const end = s1.leadCompetitionEnd != null ? s1.leadCompetitionEnd : this.course.distance;
 			const length = end - start;
-			const s1LeadCompStats = s1IsUma1 ? leadCompetitionStats.uma1 : leadCompetitionStats.uma2;
+			const s1LeadCompStats = s1IsUma1 ? this.leadCompetitionStats.uma1 : this.leadCompetitionStats.uma2;
 			s1LeadCompStats.lengths.push(length);
 			s1LeadCompStats.count++;
 		}
 		if (s2.leadCompetitionStart != null) {
 			const start = s2.leadCompetitionStart;
-			const end = s2.leadCompetitionEnd != null ? s2.leadCompetitionEnd : course.distance;
+			const end = s2.leadCompetitionEnd != null ? s2.leadCompetitionEnd : this.course.distance;
 			const length = end - start;
-			const s2LeadCompStats = s2IsUma1 ? leadCompetitionStats.uma1 : leadCompetitionStats.uma2;
+			const s2LeadCompStats = s2IsUma1 ? this.leadCompetitionStats.uma1 : this.leadCompetitionStats.uma2;
 			s2LeadCompStats.lengths.push(length);
 			s2LeadCompStats.count++;
 		}
-		
-		const basinn = sign * posDifference / 2.5;
-		diff.push(basinn);
-		if (basinn < min) {
-			min = basinn;
-			minrun = data;
+
+		const basinn = this.sign * posDifference / 2.5;
+		this.diff.push(basinn);
+		if (basinn < this.min) {
+			this.min = basinn;
+			this.minrun = data;
 		}
-		if (basinn > max) {
-			max = basinn;
-			maxrun = data;
+		if (basinn > this.max) {
+			this.max = basinn;
+			this.maxrun = data;
 		}
-		if (i == sampleCutoff) {
-			diff.sort((a,b) => a - b);
-			estMean = diff.reduce((a,b) => a + b) / diff.length;
-			const mid = Math.floor(diff.length / 2);
-			estMedian = mid > 0 && diff.length % 2 == 0 ? (diff[mid-1] + diff[mid]) / 2 : diff[mid];
+		if (this.diff.length == this.sampleCutoff) {
+			this.diff.sort((a, b) => a - b);
+			this.estMean = this.diff.reduce((a, b) => a + b) / this.diff.length;
+			const mid = Math.floor(this.diff.length / 2);
+			this.estMedian = mid > 0 && this.diff.length % 2 == 0 ? (this.diff[mid - 1] + this.diff[mid]) / 2 : this.diff[mid];
 		}
-		if (i >= sampleCutoff) {
-			const meanDiff = Math.abs(basinn - estMean), medianDiff = Math.abs(basinn - estMedian);
-			if (meanDiff < bestMeanDiff) {
-				bestMeanDiff = meanDiff;
-				meanrun = data;
+		if (this.diff.length >= this.sampleCutoff) {
+			const meanDiff = Math.abs(basinn - this.estMean), medianDiff = Math.abs(basinn - this.estMedian);
+			if (meanDiff < this.bestMeanDiff) {
+				this.bestMeanDiff = meanDiff;
+				this.meanrun = data;
 			}
-			if (medianDiff < bestMedianDiff) {
-				bestMedianDiff = medianDiff;
-				medianrun = data;
+			if (medianDiff < this.bestMedianDiff) {
+				this.bestMedianDiff = medianDiff;
+				this.medianrun = data;
 			}
 		}
 	}
-	diff.sort((a,b) => a - b);
-	
+}
+
+getResults() {
+	this.diff.sort((a, b) => a - b);
+
 	// Calculate rushed statistics
 	const calculateStats = (stats) => {
 		if (stats.lengths.length === 0) {
@@ -631,52 +681,55 @@ export function runComparison(nsamples: number, course: CourseData, racedef: Rac
 		const min = Math.min(...stats.lengths);
 		const max = Math.max(...stats.lengths);
 		const mean = stats.lengths.reduce((a, b) => a + b, 0) / stats.lengths.length;
-		const frequency = (stats.count / nsamples) * 100; // percentage
+		const frequency = (stats.count / this.diff.length) * 100; // percentage
 		return { min, max, mean, frequency };
 	};
-	
+
 	const rushedStatsSummary = {
-		uma1: calculateStats(rushedStats.uma1),
-		uma2: calculateStats(rushedStats.uma2)
+		uma1: calculateStats(this.rushedStats.uma1),
+		uma2: calculateStats(this.rushedStats.uma2)
 	};
-	
+
 	const leadCompetitionStatsSummary = {
-		uma1: calculateStats(leadCompetitionStats.uma1),
-		uma2: calculateStats(leadCompetitionStats.uma2)
+		uma1: calculateStats(this.leadCompetitionStats.uma1),
+		uma2: calculateStats(this.leadCompetitionStats.uma2)
 	};
-	
+
 	// Calculate stamina survival and full spurt rates
 	const staminaStatsSummary = {
 		uma1: {
-			staminaSurvivalRate: staminaStats.uma1.total > 0 ? ((staminaStats.uma1.total - staminaStats.uma1.hpDiedCount) / staminaStats.uma1.total * 100) : 0,
-			fullSpurtRate: staminaStats.uma1.total > 0 ? (staminaStats.uma1.fullSpurtCount / staminaStats.uma1.total * 100) : 0
+			staminaSurvivalRate: this.staminaStats.uma1.total > 0 ? ((this.staminaStats.uma1.total - this.staminaStats.uma1.hpDiedCount) / this.staminaStats.uma1.total * 100) : 0,
+			fullSpurtRate: this.staminaStats.uma1.total > 0 ? (this.staminaStats.uma1.fullSpurtCount / this.staminaStats.uma1.total * 100) : 0
 		},
 		uma2: {
-			staminaSurvivalRate: staminaStats.uma2.total > 0 ? ((staminaStats.uma2.total - staminaStats.uma2.hpDiedCount) / staminaStats.uma2.total * 100) : 0,
-			fullSpurtRate: staminaStats.uma2.total > 0 ? (staminaStats.uma2.fullSpurtCount / staminaStats.uma2.total * 100) : 0
+			staminaSurvivalRate: this.staminaStats.uma2.total > 0 ? ((this.staminaStats.uma2.total - this.staminaStats.uma2.hpDiedCount) / this.staminaStats.uma2.total * 100) : 0,
+			fullSpurtRate: this.staminaStats.uma2.total > 0 ? (this.staminaStats.uma2.fullSpurtCount / this.staminaStats.uma2.total * 100) : 0
 		}
 	};
-	
+
 	const firstUmaStatsSummary = {
 		uma1: {
-			firstPlaceRate: firstUmaStats.uma1.total > 0 ? (firstUmaStats.uma1.firstPlaceCount / firstUmaStats.uma1.total * 100) : 0
+			firstPlaceRate: this.firstUmaStats.uma1.total > 0 ? (this.firstUmaStats.uma1.firstPlaceCount / this.firstUmaStats.uma1.total * 100) : 0
 		},
 		uma2: {
-			firstPlaceRate: firstUmaStats.uma2.total > 0 ? (firstUmaStats.uma2.firstPlaceCount / firstUmaStats.uma2.total * 100) : 0
+			firstPlaceRate: this.firstUmaStats.uma2.total > 0 ? (this.firstUmaStats.uma2.firstPlaceCount / this.firstUmaStats.uma2.total * 100) : 0
 		}
 	};
-	
-	// Each run (min, max, mean, median) already has its own rushed data from its actual simulation
-	// We don't need to overwrite it - just ensure the rushed field is properly formatted
-	// The rushed data comes from the RaceSolver.rushedActivations collected during each specific run
-	
+
 	return {
-		results: diff, 
-		runData: {minrun, maxrun, meanrun, medianrun},
+		results: this.diff,
+		runData: { minrun: this.minrun, maxrun: this.maxrun, meanrun: this.meanrun, medianrun: this.medianrun },
 		rushedStats: rushedStatsSummary,
 		leadCompetitionStats: leadCompetitionStatsSummary,
-		spurtInfo: options.useEnhancedSpurt ? { uma1: spurtInfo1, uma2: spurtInfo2 } : null,
+		spurtInfo: this.options.useEnhancedSpurt ? { uma1: null, uma2: null } : null, // Placeholder as spurtInfo wasn't fully implemented in original
 		staminaStats: staminaStatsSummary,
 		firstUmaStats: firstUmaStatsSummary
 	};
+}
+}
+
+export function runComparison(nsamples: number, course: CourseData, racedef: RaceParameters, uma1: HorseState, uma2: HorseState, pacer: HorseState, options) {
+	const session = new ComparisonSession(nsamples, course, racedef, uma1, uma2, pacer, options);
+	session.run(nsamples);
+	return session.getResults();
 }
