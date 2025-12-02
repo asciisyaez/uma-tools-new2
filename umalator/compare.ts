@@ -265,99 +265,98 @@ export class ComparisonSession {
 				this.compare.addSkill(skillId, Perspective.Other, undefined, uma1Wisdom);
 			}
 		});
-		uma2.skills.toArray().sort(sort).forEach((id: string) => {
-			const skillId = id.split('-')[0];
-			const forcedPos = uma2.forcedSkillPositions.get(id);
-			if (forcedPos != null) {
-				this.compare.addSkillAtPosition(skillId, forcedPos, Perspective.Self);
-				this.standard.addSkill(skillId, Perspective.Other, undefined, uma2Wisdom);
-			} else {
-				this.compare.addSkill(skillId, Perspective.Self);
-				this.standard.addSkill(skillId, Perspective.Other, undefined, uma2Wisdom);
-			}
-		});
-	});
-	if(typeof CC_GLOBAL !== 'undefined' && !CC_GLOBAL) {
-	this.standard.withAsiwotameru().withStaminaSyoubu();
-	this.compare.withAsiwotameru().withStaminaSyoubu();
-}
+                uma2.skills.toArray().sort(sort).forEach((id: string) => {
+                        const skillId = id.split('-')[0];
+                        const forcedPos = uma2.forcedSkillPositions.get(id);
+                        if (forcedPos != null) {
+                                this.compare.addSkillAtPosition(skillId, forcedPos, Perspective.Self);
+                                this.standard.addSkill(skillId, Perspective.Other, undefined, uma2Wisdom);
+                        } else {
+                                this.compare.addSkill(skillId, Perspective.Self);
+                                this.standard.addSkill(skillId, Perspective.Other, undefined, uma2Wisdom);
+                        }
+                });
+                if (typeof CC_GLOBAL !== 'undefined' && !CC_GLOBAL) {
+                        this.standard.withAsiwotameru().withStaminaSyoubu();
+                        this.compare.withAsiwotameru().withStaminaSyoubu();
+                }
 
-if (options.posKeepMode === PosKeepMode.Approximate) {
-	this.pacerHorse = this.standard.useDefaultPacer(true);
-}
-else if (options.posKeepMode === PosKeepMode.Virtual) {
-	if (pacer) {
-		const pacerConfig = pacer.toJS ? pacer.toJS() : pacer;
-		this.pacerHorse = this.standard.pacer(pacerConfig);
+                if (options.posKeepMode === PosKeepMode.Approximate) {
+                        this.pacerHorse = this.standard.useDefaultPacer(true);
+                }
+                else if (options.posKeepMode === PosKeepMode.Virtual) {
+                        if (pacer) {
+                                const pacerConfig = pacer.toJS ? pacer.toJS() : pacer;
+                                this.pacerHorse = this.standard.pacer(pacerConfig);
 
-		if (pacerConfig.skills && Array.isArray(pacerConfig.skills) && pacerConfig.skills.length > 0) {
-			pacerConfig.skills.forEach((skillId: string) => {
-				const cleanSkillId = skillId.split('-')[0];
-				this.standard.addPacerSkill(cleanSkillId);
-			});
-		}
-	}
-	else {
-		this.pacerHorse = this.standard.useDefaultPacer();
-	}
-}
+                                if (pacerConfig.skills && Array.isArray(pacerConfig.skills) && pacerConfig.skills.length > 0) {
+                                        pacerConfig.skills.forEach((skillId: string) => {
+                                                const cleanSkillId = skillId.split('-')[0];
+                                                this.standard.addPacerSkill(cleanSkillId);
+                                        });
+                                }
+                        }
+                        else {
+                                this.pacerHorse = this.standard.useDefaultPacer();
+                        }
+                }
 
-const getActivator = (selfSet, otherSet) => {
-	return function (s, id, persp) {
-		const skillSet = persp == Perspective.Self ? selfSet : otherSet;
-		if (id != 'asitame' && id != 'staminasyoubu') {
-			if (!skillSet.has(id)) skillSet.set(id, []);
-			skillSet.get(id).push([s.pos, s.pos]);  // Initialize with same position for instant skills
-		}
-	};
-};
-const getDeactivator = (selfSet, otherSet) => {
-	return function (s, id, persp) {
-		const skillSet = persp == Perspective.Self ? selfSet : otherSet;
-		if (id != 'asitame' && id != 'staminasyoubu') {
-			const ar = skillSet.get(id);  // activation record
-			if (ar && ar.length > 0) {
-				// Only update if this is a duration skill (position has moved)
-				const activationPos = ar[ar.length - 1][0];
-				if (s.pos > activationPos) {
-					ar[ar.length - 1][1] = Math.min(s.pos, course.distance);
-				}
-			}
-		}
-	};
-};
-this.standard.onSkillActivate(getActivator(this.skillPos1, this.skillPos2));
-this.standard.onSkillDeactivate(getDeactivator(this.skillPos1, this.skillPos2));
-this.compare.onSkillActivate(getActivator(this.skillPos2, this.skillPos1));
-this.compare.onSkillDeactivate(getDeactivator(this.skillPos2, this.skillPos1));
-this.a = this.standard.build();
-this.b = this.compare.build();
+                const getActivator = (selfSet, otherSet) => {
+                        return function (s, id, persp) {
+                                const skillSet = persp == Perspective.Self ? selfSet : otherSet;
+                                if (id != 'asitame' && id != 'staminasyoubu') {
+                                        if (!skillSet.has(id)) skillSet.set(id, []);
+                                        skillSet.get(id).push([s.pos, s.pos]);  // Initialize with same position for instant skills
+                                }
+                        };
+                };
+                const getDeactivator = (selfSet, otherSet) => {
+                        return function (s, id, persp) {
+                                const skillSet = persp == Perspective.Self ? selfSet : otherSet;
+                                if (id != 'asitame' && id != 'staminasyoubu') {
+                                        const ar = skillSet.get(id);  // activation record
+                                        if (ar && ar.length > 0) {
+                                                // Only update if this is a duration skill (position has moved)
+                                                const activationPos = ar[ar.length - 1][0];
+                                                if (s.pos > activationPos) {
+                                                        ar[ar.length - 1][1] = Math.min(s.pos, course.distance);
+                                                }
+                                        }
+                                }
+                        };
+                };
+                this.standard.onSkillActivate(getActivator(this.skillPos1, this.skillPos2));
+                this.standard.onSkillDeactivate(getDeactivator(this.skillPos1, this.skillPos2));
+                this.compare.onSkillActivate(getActivator(this.skillPos2, this.skillPos1));
+                this.compare.onSkillDeactivate(getDeactivator(this.skillPos2, this.skillPos1));
+                this.a = this.standard.build();
+                this.b = this.compare.build();
 
-this.sampleCutoff = Math.max(Math.floor(nsamples * 0.8), nsamples - 200);
+                this.sampleCutoff = Math.max(Math.floor(nsamples * 0.8), nsamples - 200);
 
-// Track rushed statistics across all simulations
-this.rushedStats = {
-	uma1: { lengths: [], count: 0 },
-	uma2: { lengths: [], count: 0 }
-};
+                // Track rushed statistics across all simulations
+                this.rushedStats = {
+                        uma1: { lengths: [], count: 0 },
+                        uma2: { lengths: [], count: 0 }
+                };
 
-this.leadCompetitionStats = {
-	uma1: { lengths: [], count: 0 },
-	uma2: { lengths: [], count: 0 }
-};
+                this.leadCompetitionStats = {
+                        uma1: { lengths: [], count: 0 },
+                        uma2: { lengths: [], count: 0 }
+                };
 
-// Track stamina survival and full spurt statistics
-this.staminaStats = {
-	uma1: { hpDiedCount: 0, fullSpurtCount: 0, total: 0 },
-	uma2: { hpDiedCount: 0, fullSpurtCount: 0, total: 0 }
-};
+                // Track stamina survival and full spurt statistics
+                this.staminaStats = {
+                        uma1: { hpDiedCount: 0, fullSpurtCount: 0, total: 0 },
+                        uma2: { hpDiedCount: 0, fullSpurtCount: 0, total: 0 }
+                };
 
-this.firstUmaStats = {
-	uma1: { firstPlaceCount: 0, total: 0 },
-	uma2: { firstPlaceCount: 0, total: 0 }
-};
+                this.firstUmaStats = {
+                        uma1: { firstPlaceCount: 0, total: 0 },
+                        uma2: { firstPlaceCount: 0, total: 0 }
+                };
 
-this.basePacerRng = new Rule30CARng(options.seed + 1);
+                this.basePacerRng = new Rule30CARng(options.seed + 1);
 	}
 
 run(count: number) {
