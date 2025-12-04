@@ -29,7 +29,8 @@ export function ClassicLayout(props: LayoutProps) {
         pacemakerCount, handlePacemakerCountChange, selectedPacemakerIndices, togglePacemakerSelection,
         isPacemakerDropdownOpen, setIsPacemakerDropdownOpen, getSelectedPacemakers,
         simWitVariance, handleSimWitVarianceToggle, showWitVarianceSettings, setShowWitVarianceSettings,
-        witVarianceProps, expanded, toggleExpand, currentIdx, resultsContent, popoverSkill, tableData
+        witVarianceProps, expanded, toggleExpand, currentIdx, resultsContent, popoverSkill, tableData,
+        progress
     } = props;
 
     const umaTabs = (
@@ -84,7 +85,11 @@ export function ClassicLayout(props: LayoutProps) {
                         </fieldset>
                         {
                             mode == Mode.Compare
-                                ? <button id="run" onClick={doComparison} tabindex={1} disabled={isSimulationRunning}>COMPARE</button>
+                                ? <button id="run" onClick={doComparison} tabindex={1} disabled={isSimulationRunning}>
+                                    {isSimulationRunning && progress.total > 0
+                                        ? `Running (${progress.current}/${progress.total})`
+                                        : 'COMPARE'}
+                                </button>
                                 : <button id="run" onClick={doBasinnChart} tabindex={1} disabled={isSimulationRunning}>RUN</button>
                         }
                         {
