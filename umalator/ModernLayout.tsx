@@ -126,7 +126,11 @@ export function ModernLayout(props: LayoutProps) {
                                                         ? `Running (${progress.current}/${progress.total})`
                                                         : 'COMPARE'}
                                                 </button>
-                                                : <button className="glass-button primary" onClick={doBasinnChart} disabled={isSimulationRunning}>RUN</button>
+                                                : <button className="glass-button primary" onClick={doBasinnChart} disabled={isSimulationRunning}>
+                                                    {isSimulationRunning && progress.label
+                                                        ? `Running (${progress.label})`
+                                                        : 'RUN'}
+                                                </button>
                                             }
                                             {mode == Mode.Compare &&
                                                 <button className="glass-button secondary" onClick={doRunOnce} disabled={isSimulationRunning}>Run Once</button>

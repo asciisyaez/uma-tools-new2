@@ -90,7 +90,11 @@ export function ClassicLayout(props: LayoutProps) {
                                         ? `Running (${progress.current}/${progress.total})`
                                         : 'COMPARE'}
                                 </button>
-                                : <button id="run" onClick={doBasinnChart} tabindex={1} disabled={isSimulationRunning}>RUN</button>
+                                : <button id="run" onClick={doBasinnChart} tabindex={1} disabled={isSimulationRunning}>
+                                    {isSimulationRunning && progress.label
+                                        ? `Running (${progress.label})`
+                                        : 'RUN'}
+                                </button>
                         }
                         {
                             mode == Mode.Compare

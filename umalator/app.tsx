@@ -770,7 +770,7 @@ function App(props) {
 	const [posKeepMode, setPosKeepModeRaw] = useState(PosKeepMode.Approximate);
 	const [showHp, toggleShowHp] = useReducer((b, _) => !b, false);
 	const [showLanes, toggleShowLanes] = useReducer((b, _) => !b, false);
-	const [progress, setProgress] = useState({ current: 0, total: 0 });
+	const [progress, setProgress] = useState({ current: 0, total: 0, phase: 0, label: '' });
 
 	useEffect(() => { document.documentElement.classList.toggle('dark', darkMode); }, [darkMode]);
 
@@ -900,20 +900,86 @@ function App(props) {
 
 	const worker1Ref = useRef<Worker | null>(null);
 	const worker2Ref = useRef<Worker | null>(null);
+	const chartProgressRef = useRef({ w1: { phase: 0, current: 0, total: 0 }, w2: { phase: 0, current: 0, total: 0 } });
 
 	useEffect(() => {
 		const createWorker = () => {
 			const w = new Worker('./simulator.worker.js');
 			w.addEventListener('message', function (e) {
-				const { type, results, progress, total } = e.data;
+				const { type, results, progress, total, phase } = e.data;
 				switch (type) {
 					case 'compare':
 						if (progress !== undefined) {
-							setProgress({ current: progress, total });
+							console.log('Progress update:', progress, total);
+							setProgress({ current: progress, total, phase: 0, label: '' });
 						}
 						if (results) setResults(results);
 						break;
 					case 'chart':
+						if (phase !== undefined) {
+							const isWorker1 = w === worker1Ref.current;
+							const p = isWorker1 ? chartProgressRef.current.w1 : chartProgressRef.current.w2;
+							p.phase = phase;
+							p.current = progress;
+							p.total = total;
+
+							// Aggregate progress
+							// We display the phase of the slowest worker (min phase)
+							// And sum the progress if phases match, otherwise just show something reasonable
+							const p1 = chartProgressRef.current.w1;
+							const p2 = chartProgressRef.current.w2;
+							const minPhase = Math.min(p1.phase || 1, p2.phase || 1);
+							// If one worker is ahead in phase, its progress in the previous phase is effectively 100% (or total)
+							// But total changes between phases.
+							// Simplification: Just show "Phase X/4" and maybe sum of current/total if phases match.
+
+							let current = 0;
+							let totalSum = 0;
+
+							if (p1.phase == minPhase) {
+								current += p1.current;
+								totalSum += p1.total;
+							} else if (p1.phase > minPhase) {
+								// Worker 1 is ahead, so it finished minPhase. We don't know the exact total of minPhase anymore unless we stored it,
+								// but we can assume it's done.
+								// Actually, let's just show the progress of the current phase for each worker?
+								// "Phase 1/4 (50/100)"
+								// If phases mismatch, it's tricky.
+								// Let's just sum them if they match, or ignore the one ahead?
+								// If p1 is ahead, it means p2 is still in minPhase. So p1 contributes 0 to minPhase progress?
+								// No, if p1 is ahead, it completed minPhase.
+							}
+
+							// Better approach: Just show "Phase X/4" and the sum of items processed in that phase.
+							// If phases mismatch, we are in the transition.
+							// Let's just use the minimum phase.
+
+							if (p1.phase == p2.phase) {
+								current = p1.current + p2.current;
+								totalSum = p1.total + p2.total;
+							} else {
+								// Mismatch. 
+								// e.g. w1 is phase 2, w2 is phase 1.
+								// We are effectively in phase 1.
+								// w1 is done with phase 1.
+								// We don't have w1's phase 1 total anymore.
+								// So just show w2's progress?
+								if (p1.phase < p2.phase) {
+									current = p1.current;
+									totalSum = p1.total;
+								} else {
+									current = p2.current;
+									totalSum = p2.total;
+								}
+							}
+
+							setProgress({
+								current,
+								total: totalSum,
+								phase: minPhase,
+								label: `Phase ${minPhase}/4`
+							});
+						}
 						updateTableData(results);
 						break;
 					case 'compare-complete':
@@ -1080,7 +1146,7 @@ function App(props) {
 	function doComparison() {
 		postEvent('doComparison', {});
 		setIsSimulationRunning(true);
-		setProgress({ current: 0, total: nsamples });
+		setProgress({ current: 0, total: nsamples, phase: 0, label: '' });
 		worker1Ref.current?.postMessage({
 			msg: 'compare',
 			data: {
@@ -1112,7 +1178,7 @@ function App(props) {
 	function doRunOnce() {
 		postEvent('doRunOnce', {});
 		setIsSimulationRunning(true);
-		setProgress({ current: 0, total: 1 });
+		setProgress({ current: 0, total: 1, phase: 0, label: '' });
 		const effectiveSeed = seed + runOnceCounter;
 		setRunOnceCounter(prev => prev + 1);
 		worker1Ref.current?.postMessage({

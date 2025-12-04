@@ -34,7 +34,7 @@ function mergeResultSets(data1, data2) {
 	});
 }
 
-async function runRoundBatch(nsamples: number, skills: string[], course: CourseData, racedef: RaceParameters, uma, pacer, options, previousResults?: Map<string, any>) {
+async function runRoundBatch(nsamples: number, skills: string[], course: CourseData, racedef: RaceParameters, uma, pacer, options, previousResults?: Map<string, any>, phase?: number) {
 	const currentRoundData = new Map();
 	const CHUNK_SIZE = Math.max(1, Math.floor(500 / nsamples));
 
@@ -67,7 +67,7 @@ async function runRoundBatch(nsamples: number, skills: string[], course: CourseD
 			if (previousResults) previousResults.set(id, merged);
 		});
 
-		postMessage({ type: 'chart', results: chunkUpdates });
+		postMessage({ type: 'chart', results: chunkUpdates, phase, progress: i + chunk.length, total: skills.length });
 		await new Promise(r => setTimeout(r, 0));
 	}
 
@@ -84,17 +84,17 @@ async function runChart({ skills, course, racedef, uma, pacer, options }) {
 
 	const results = new Map();
 
-	await runRoundBatch(5, skills, course, racedef, uma_, pacer_, options, results);
+	await runRoundBatch(5, skills, course, racedef, uma_, pacer_, options, results, 1);
 
 	skills = skills.filter(id => results.get(id).max > 0.1);
 
-	await runRoundBatch(20, skills, course, racedef, uma_, pacer_, options, results);
+	await runRoundBatch(20, skills, course, racedef, uma_, pacer_, options, results, 2);
 
 	skills = skills.filter(id => Math.abs(results.get(id).max - results.get(id).min) > 0.1);
 
-	await runRoundBatch(50, skills, course, racedef, uma_, pacer_, options, results);
+	await runRoundBatch(50, skills, course, racedef, uma_, pacer_, options, results, 3);
 
-	await runRoundBatch(200, skills, course, racedef, uma_, pacer_, options, results);
+	await runRoundBatch(200, skills, course, racedef, uma_, pacer_, options, results, 4);
 
 	postMessage({ type: 'chart-complete' });
 }
