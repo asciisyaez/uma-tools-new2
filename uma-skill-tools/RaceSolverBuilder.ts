@@ -3,7 +3,7 @@ import { CourseData, CourseHelpers, DistanceType } from './CourseData';
 import { Region, RegionList } from './Region';
 import { Rule30CARng, SeededRng } from './Random';
 import { Conditions, random, immediate, noopRandom } from './ActivationConditions';
-import { ActivationSamplePolicy, ImmediatePolicy } from './ActivationSamplePolicy';
+import { ActivationSamplePolicy, ImmediatePolicy, createFixedPositionPolicy } from './ActivationSamplePolicy';
 import { getParser } from './ConditionParser';
 import { RaceSolver, RaceState, PendingSkill, DynamicCondition, SkillType, SkillRarity, SkillEffect, Perspective, PosKeepMode } from './RaceSolver';
 import { Mood, GroundCondition, Weather, Season, Time, Grade, RaceParameters } from './RaceParameters';
@@ -44,10 +44,10 @@ const StrategyProficiencyModifier = Object.freeze([1.1, 1.0, 0.85, 0.75, 0.6, 0.
 namespace Asitame {
 	export const StrategyDistanceCoefficient = Object.freeze([
 		[],  // distances are 1-indexed (as are strategies, hence the 0 in the first column for every row)
-		[0, 1.0, 0.7, 0.75,  0.7,  1.0],  // short (nige, senkou, sasi, oikomi, oonige)
-		[0, 1.0, 0.8, 0.7,   0.75, 1.0],  // mile
+		[0, 1.0, 0.7, 0.75, 0.7, 1.0],  // short (nige, senkou, sasi, oikomi, oonige)
+		[0, 1.0, 0.8, 0.7, 0.75, 1.0],  // mile
 		[0, 1.0, 0.9, 0.875, 0.86, 1.0],  // medium
-		[0, 1.0, 0.9, 1.0,   0.9,  1.0]   // long
+		[0, 1.0, 0.9, 1.0, 0.9, 1.0]   // long
 	]);
 
 	export const BaseModifier = 0.00875;
@@ -77,13 +77,13 @@ export function parseStrategy(s: string | Strategy) {
 		return s;
 	}
 	switch (s.toUpperCase()) {
-	case 'NIGE': return Strategy.Nige;
-	case 'SENKOU': return Strategy.Senkou;
-	case 'SASI':
-	case 'SASHI': return Strategy.Sasi;
-	case 'OIKOMI': return Strategy.Oikomi;
-	case 'OONIGE': return Strategy.Oonige;
-	default: throw new Error('Invalid running strategy.');
+		case 'NIGE': return Strategy.Nige;
+		case 'SENKOU': return Strategy.Senkou;
+		case 'SASI':
+		case 'SASHI': return Strategy.Sasi;
+		case 'OIKOMI': return Strategy.Oikomi;
+		case 'OONIGE': return Strategy.Oonige;
+		default: throw new Error('Invalid running strategy.');
 	}
 }
 
@@ -92,15 +92,15 @@ export function parseAptitude(a: string | Aptitude, type: string) {
 		return a;
 	}
 	switch (a.toUpperCase()) {
-	case 'S': return Aptitude.S;
-	case 'A': return Aptitude.A;
-	case 'B': return Aptitude.B;
-	case 'C': return Aptitude.C;
-	case 'D': return Aptitude.D;
-	case 'E': return Aptitude.E;
-	case 'F': return Aptitude.F;
-	case 'G': return Aptitude.G;
-	default: throw new Error('Invalid ' + type + ' aptitude.');
+		case 'S': return Aptitude.S;
+		case 'A': return Aptitude.A;
+		case 'B': return Aptitude.B;
+		case 'C': return Aptitude.C;
+		case 'D': return Aptitude.D;
+		case 'E': return Aptitude.E;
+		case 'F': return Aptitude.F;
+		case 'G': return Aptitude.G;
+		default: throw new Error('Invalid ' + type + ' aptitude.');
 	}
 }
 
@@ -109,11 +109,11 @@ export function parseGroundCondition(g: string | GroundCondition) {
 		return g;
 	}
 	switch (g.toUpperCase()) {
-	case 'GOOD': return GroundCondition.Good;
-	case 'YIELDING': return GroundCondition.Yielding;
-	case 'SOFT': return GroundCondition.Soft;
-	case 'HEAVY': return GroundCondition.Heavy;
-	default: throw new Error('Invalid ground condition.');
+		case 'GOOD': return GroundCondition.Good;
+		case 'YIELDING': return GroundCondition.Yielding;
+		case 'SOFT': return GroundCondition.Soft;
+		case 'HEAVY': return GroundCondition.Heavy;
+		default: throw new Error('Invalid ground condition.');
 	}
 }
 
@@ -122,11 +122,11 @@ export function parseWeather(w: string | Weather) {
 		return w;
 	}
 	switch (w.toUpperCase()) {
-	case 'SUNNY': return Weather.Sunny;
-	case 'CLOUDY': return Weather.Cloudy;
-	case 'RAINY': return Weather.Rainy;
-	case 'SNOWY': return Weather.Snowy;
-	default: throw new Error('Invalid weather.');
+		case 'SUNNY': return Weather.Sunny;
+		case 'CLOUDY': return Weather.Cloudy;
+		case 'RAINY': return Weather.Rainy;
+		case 'SNOWY': return Weather.Snowy;
+		default: throw new Error('Invalid weather.');
 	}
 }
 
@@ -135,12 +135,12 @@ export function parseSeason(s: string | Season) {
 		return s;
 	}
 	switch (s.toUpperCase()) {
-	case 'SPRING': return Season.Spring;
-	case 'SUMMER': return Season.Summer;
-	case 'AUTUMN': return Season.Autumn;
-	case 'WINTER': return Season.Winter;
-	case 'SAKURA': return Season.Sakura;
-	default: throw new Error('Invalid season.');
+		case 'SPRING': return Season.Spring;
+		case 'SUMMER': return Season.Summer;
+		case 'AUTUMN': return Season.Autumn;
+		case 'WINTER': return Season.Winter;
+		case 'SAKURA': return Season.Sakura;
+		default: throw new Error('Invalid season.');
 	}
 }
 
@@ -149,12 +149,12 @@ export function parseTime(t: string | Time) {
 		return t;
 	}
 	switch (t.toUpperCase()) {
-	case 'NONE': case 'NOTIME': return Time.NoTime;
-	case 'MORNING': return Time.Morning;
-	case 'MIDDAY': return Time.Midday;
-	case 'EVENING': return Time.Evening;
-	case 'NIGHT': return Time.Night;
-	default: throw new Error('Invalid race time.');
+		case 'NONE': case 'NOTIME': return Time.NoTime;
+		case 'MORNING': return Time.Morning;
+		case 'MIDDAY': return Time.Midday;
+		case 'EVENING': return Time.Evening;
+		case 'NIGHT': return Time.Night;
+		default: throw new Error('Invalid race time.');
 	}
 }
 
@@ -163,15 +163,15 @@ export function parseGrade(g: string | Grade) {
 		return g;
 	}
 	switch (g.toUpperCase()) {
-	case 'G1': return Grade.G1;
-	case 'G2': return Grade.G2;
-	case 'G3': return Grade.G3;
-	case 'OP': return Grade.OP;
-	case 'PRE-OP': case 'PREOP': return Grade.PreOP;
-	case 'MAIDEN': return Grade.Maiden;
-	case 'DEBUT': return Grade.Debut;
-	case 'DAILY': return Grade.Daily;
-	default: throw new Error('Invalid race grade.');
+		case 'G1': return Grade.G1;
+		case 'G2': return Grade.G2;
+		case 'G3': return Grade.G3;
+		case 'OP': return Grade.OP;
+		case 'PRE-OP': case 'PREOP': return Grade.PreOP;
+		case 'MAIDEN': return Grade.Maiden;
+		case 'DEBUT': return Grade.Debut;
+		case 'DAILY': return Grade.Daily;
+		default: throw new Error('Invalid race grade.');
 	}
 }
 
@@ -247,19 +247,19 @@ function isTarget(self: Perspective, targetType: SkillTarget) {
 
 function buildSkillEffects(skill, perspective: Perspective) {
 	// im on a really old version of node and cant use flatMap
-	return skill.effects.reduce((acc,ef) => {
-		if (isTarget(perspective, ef.target) && SkillType.hasOwnProperty(ef.type)) {
-			acc.push({type: ef.type, baseDuration: skill.baseDuration / 10000, modifier: ef.modifier / 10000});
+	return skill.effects.reduce((acc, ef) => {
+		if (isTarget(perspective, ef.target) && ef.type in SkillType) {
+			acc.push({ type: ef.type, baseDuration: skill.baseDuration / 10000, modifier: ef.modifier / 10000 });
 		}
 		return acc;
 	}, []);
 }
 
-export function buildSkillData(horse: HorseParameters, raceParams: PartialRaceParameters, course: CourseData, wholeCourse: RegionList, parser: {parse: any, tokenize: any}, skillId: string, perspective: Perspective, ignoreNullEffects: boolean = false) {
+export function buildSkillData(horse: HorseParameters, raceParams: PartialRaceParameters, course: CourseData, wholeCourse: RegionList, parser: { parse: any, tokenize: any }, skillId: string, perspective: Perspective, ignoreNullEffects: boolean = false) {
 	if (!(skillId in skills)) {
 		throw new Error('bad skill ID ' + skillId);
 	}
-	const extra = Object.assign({skillId}, raceParams);
+	const extra = Object.assign({ skillId }, raceParams);
 	const alternatives = skills[skillId].alternatives;
 	const triggers = [];
 	for (let i = 0; i < alternatives.length; ++i) {
@@ -272,7 +272,7 @@ export function buildSkillData(horse: HorseParameters, raceParams: PartialRacePa
 			if (preRegions.length == 0) {
 				continue;
 			} else {
-				const bounds = new Region(preRegions[0].start, wholeCourse[wholeCourse.length-1].end);
+				const bounds = new Region(preRegions[0].start, wholeCourse[wholeCourse.length - 1].end);
 				full = full.rmap(r => r.intersect(bounds));
 			}
 		}
@@ -319,7 +319,7 @@ export function buildSkillData(horse: HorseParameters, raceParams: PartialRacePa
 	} else {
 		const rarity = skills[skillId].rarity;
 		const afterEnd = new RegionList();
-		afterEnd.push(new Region(9999,9999));
+		afterEnd.push(new Region(9999, 9999));
 		return [{
 			skillId: skillId,
 			perspective: perspective,
@@ -399,12 +399,12 @@ export class RaceSolverBuilder {
 	_pacerTriggers: Region[][];
 	_rng: SeededRng
 	_seed: number
-	_parser: {parse: any, tokenize: any}
-	_skills: {id: string, p: Perspective, originWisdom?: number}[]
+	_parser: { parse: any, tokenize: any }
+	_skills: { id: string, p: Perspective, originWisdom?: number }[]
 	_samplePolicyOverride: Map<string, ActivationSamplePolicy>
 	_extraSkillHooks: ((skilldata: SkillData[], horse: HorseParameters, course: CourseData) => void)[]
-	_onSkillActivate: (state: RaceSolver, skillId: string) => void
-	_onSkillDeactivate: (state: RaceSolver, skillId: string) => void
+	_onSkillActivate: (state: RaceSolver, skillId: string, perspective: Perspective) => void
+	_onSkillDeactivate: (state: RaceSolver, skillId: string, perspective: Perspective) => void
 	_disableRushed: boolean
 	_disableDownhill: boolean
 	_disableSectionModifier: boolean
@@ -500,7 +500,7 @@ export class RaceSolverBuilder {
 	}
 
 	order(start: number, end: number) {
-		this._raceParams.orderRange = [start,end];
+		this._raceParams.orderRange = [start, end];
 		return this;
 	}
 
@@ -513,7 +513,7 @@ export class RaceSolverBuilder {
 		this._horse = horse;
 		return this;
 	}
-	
+
 	pacerSpeedUpRate(rate: number) {
 		this._pacerSpeedUpRate = rate;
 		return this;
@@ -548,10 +548,10 @@ export class RaceSolverBuilder {
 		Object.freeze(wholeCourse);
 
 		let pacerSkillData: SkillData[] = [];
-		
-		if (pacerBaseHorse ) {
+
+		if (pacerBaseHorse) {
 			const makePacerSkill = buildSkillData.bind(null, pacerBaseHorse, this._raceParams, this._course, wholeCourse, this._parser);
-			pacerSkillData = this._pacerSkillIds.flatMap(id => makePacerSkill(id, Perspective.Self));
+			pacerSkillData = this._pacerSkillIds.reduce((acc, id) => acc.concat(makePacerSkill(id, Perspective.Self)), [] as SkillData[]);
 			this._pacerSkillData = pacerSkillData;
 		}
 
@@ -564,7 +564,7 @@ export class RaceSolverBuilder {
 		Object.freeze(wholeCourse);
 
 		let pacerTriggers: Region[][] = [];
-		
+
 		if (this._pacerSkillIds.length > 0) {
 			pacerTriggers = this._pacerSkillData.map(sd => {
 				const sp = this._samplePolicyOverride.get(sd.skillId) || sd.samplePolicy;
@@ -611,7 +611,7 @@ export class RaceSolverBuilder {
 	}
 
 	useDefaultPacer(openingLegAccel: boolean = false) {
-		const pacer = Object.assign({}, this._horse, {strategy: 'Nige'});
+		const pacer = Object.assign({}, this._horse, { strategy: 'Nige' });
 
 		if (openingLegAccel) {
 			// top is jiga and bottom is white sente
@@ -623,14 +623,14 @@ export class RaceSolverBuilder {
 				rarity: SkillRarity.White,
 				trigger: new Region(0, 100),
 				extraCondition: (_) => true,
-				effects: [{type: SkillType.Accel, baseDuration: 3.0, modifier: 0.2}]
+				effects: [{ type: SkillType.Accel, baseDuration: 3.0, modifier: 0.2 }]
 			}, {
 				skillId: '200532',
 				perspective: Perspective.Self,
 				rarity: SkillRarity.White,
 				trigger: new Region(0, 100),
 				extraCondition: (_) => true,
-				effects: [{type: SkillType.Accel, baseDuration: 1.2, modifier: 0.2}]
+				effects: [{ type: SkillType.Accel, baseDuration: 1.2, modifier: 0.2 }]
 			}];
 		}
 
@@ -647,7 +647,7 @@ export class RaceSolverBuilder {
 		// for some reason, asitame (probably??) uses *displayed* power adjusted for motivation + greens
 		const baseDisplayedPower = this._horse.power * (1 + 0.02 * this._raceParams.mood);
 		this._extraSkillHooks.push((skilldata, horse, course) => {
-			const power = skilldata.reduce((acc,sd) => {
+			const power = skilldata.reduce((acc, sd) => {
 				const powerUp = sd.effects.find(ef => ef.type == SkillType.PowerUp);
 				if (powerUp && sd.regions.length > 0 && sd.regions[0].start < 9999) {
 					return acc + powerUp.modifier;
@@ -681,7 +681,7 @@ export class RaceSolverBuilder {
 		this._extraSkillHooks.push((skilldata, horse, course) => {
 			// unfortunately the simulator doesnt (yet) support dynamic modifiers, so we have to account for greens here
 			// even though they are later added normally during execution
-			const stamina = skilldata.reduce((acc,sd) => {
+			const stamina = skilldata.reduce((acc, sd) => {
 				const staminaUp = sd.effects.find(ef => ef.type == SkillType.StaminaUp);
 				if (staminaUp && sd.regions.length > 0 && sd.regions[0].start < 9999) {
 					return acc + staminaUp.modifier;
@@ -713,7 +713,7 @@ export class RaceSolverBuilder {
 	}
 
 	addSkill(skillId: string, perspective: Perspective = Perspective.Self, samplePolicy?: ActivationSamplePolicy, originWisdom?: number) {
-		this._skills.push({id: skillId, p: perspective, originWisdom});
+		this._skills.push({ id: skillId, p: perspective, originWisdom });
 		if (samplePolicy != null) {
 			this._samplePolicyOverride.set(skillId, samplePolicy);
 		}
@@ -729,10 +729,9 @@ export class RaceSolverBuilder {
 	 * @returns this builder for chaining
 	 */
 	addSkillAtPosition(skillId: string, position: number, perspective: Perspective = Perspective.Self, originWisdom?: number) {
-		const { createFixedPositionPolicy } = require('./ActivationSamplePolicy');
 		return this.addSkill(skillId, perspective, createFixedPositionPolicy(position), originWisdom);
 	}
-	
+
 	/**
 	 * Disables the rushed status mechanic for this horse.
 	 * When disabled, the horse will never enter the rushed state regardless of wisdom.
@@ -783,12 +782,12 @@ export class RaceSolverBuilder {
 		return this;
 	}
 
-	onSkillActivate(cb: (state: RaceSolver, skillId: string) => void) {
+	onSkillActivate(cb: (state: RaceSolver, skillId: string, perspective: Perspective) => void) {
 		this._onSkillActivate = cb;
 		return this;
 	}
 
-	onSkillDeactivate(cb: (state: RaceSolver, skillId: string) => void) {
+	onSkillDeactivate(cb: (state: RaceSolver, skillId: string, perspective: Perspective) => void) {
 		this._onSkillDeactivate = cb;
 		return this;
 	}
@@ -829,16 +828,25 @@ export class RaceSolverBuilder {
 		return clone;
 	}
 
-	*build() {
+	private _prepared: boolean = false;
+	private _preparedTriggers: Region[][] = [];
+	private _preparedSkillData: any[] = [];
+	private _preparedHorse: HorseParameters | null = null;
+
+	prepare() {
+		if (this._prepared) return;
+
 		let horse = buildBaseStats(this._horse, this._horse.mood);
-		let skillRng = new Rule30CARng(this._rng.int32());
+		// Use a fresh RNG seeded with the initial seed to ensure determinism
+		let rng = new Rule30CARng(this._seed);
+		let skillRng = new Rule30CARng(rng.int32());
 
 		const wholeCourse = new RegionList();
 		wholeCourse.push(new Region(0, this._course.distance));
 		Object.freeze(wholeCourse);
 
 		const makeSkill = buildSkillData.bind(null, horse, this._raceParams, this._course, wholeCourse, this._parser);
-		const skilldata = this._skills.flatMap(({id,p}) => makeSkill(id, p));
+		const skilldata = this._skills.reduce((acc, { id, p }) => acc.concat(makeSkill(id, p)), [] as SkillData[]);
 		this._extraSkillHooks.forEach(h => h(skilldata, horse, this._course));
 		const triggers = skilldata.map(sd => {
 			const sp = this._samplePolicyOverride.get(sd.skillId) || sd.samplePolicy;
@@ -846,41 +854,72 @@ export class RaceSolverBuilder {
 		});
 
 		// must come after skill activations are decided because conditions like base_power depend on base stats
-		horse = buildAdjustedStats(horse, this._course, this._raceParams.groundCondition);
+		this._preparedHorse = buildAdjustedStats(horse, this._course, this._raceParams.groundCondition);
+		this._preparedSkillData = skilldata;
+		this._preparedTriggers = triggers;
+		this._prepared = true;
+	}
+
+	getSolver(i: number) {
+		if (!this._prepared) this.prepare();
+
+		// Re-create the RNG state for iteration i
+		// Sequence:
+		// 1. skillRng seed = rng.int32()
+		// 2. Loop 0..i-1:
+		//    - solverRng seed = rng.int32()
+		//    - hpRng seed = rng.int32()
+		// 3. Iteration i:
+		//    - solverRng seed = rng.int32()
+		//    - hpRng seed = rng.int32()
+
+		let rng = new Rule30CARng(this._seed);
+		rng.int32(); // Skip skillRng seed
+
+		// Skip previous iterations
+		for (let j = 0; j < i; j++) {
+			rng.int32(); // solverRng
+			rng.int32(); // hpRng
+		}
+
+		let solverRng = new Rule30CARng(rng.int32());
+		const skills = this._preparedSkillData.map((sd, sdi) => ({
+			skillId: sd.skillId,
+			perspective: sd.perspective,
+			rarity: sd.rarity,
+			trigger: this._preparedTriggers[sdi][i % this._preparedTriggers[sdi].length],
+			extraCondition: sd.extraCondition,
+			effects: sd.effects,
+			originWisdom: this._skills[sdi].originWisdom
+		}));
+
+		const hpRng = new Rule30CARng(rng.int32());
+		const hpPolicy = this._useEnhancedSpurt
+			? new EnhancedHpPolicy(this._course, this._raceParams.groundCondition, hpRng, this._accuracyMode)
+			: new GameHpPolicy(this._course, this._raceParams.groundCondition, hpRng);
+
+		return new RaceSolver({
+			horse: this._preparedHorse,
+			course: this._course,
+			skills,
+			hp: hpPolicy,
+			rng: solverRng,
+			onSkillActivate: this._onSkillActivate,
+			onSkillDeactivate: this._onSkillDeactivate,
+			disableRushed: this._disableRushed,
+			disableDownhill: this._disableDownhill,
+			disableSectionModifier: this._disableSectionModifier,
+			skillCheckChance: this._skillCheckChance,
+			posKeepMode: this._posKeepMode,
+			mode: this._mode
+		});
+	}
+
+	*build() {
+		this.prepare();
 
 		for (let i = 0; i < this.nsamples; ++i) {
-			let solverRng = new Rule30CARng(this._rng.int32());
-
-			const skills = skilldata.map((sd,sdi) => ({
-				skillId: sd.skillId,
-				perspective: sd.perspective,
-				rarity: sd.rarity,
-				trigger: triggers[sdi][i % triggers[sdi].length],
-				extraCondition: sd.extraCondition,
-				effects: sd.effects,
-				originWisdom: this._skills[sdi].originWisdom
-			}));
-
-			const hpRng = new Rule30CARng(this._rng.int32());
-			const hpPolicy = this._useEnhancedSpurt
-				? new EnhancedHpPolicy(this._course, this._raceParams.groundCondition, hpRng, this._accuracyMode)
-				: new GameHpPolicy(this._course, this._raceParams.groundCondition, hpRng);
-
-			const redo: boolean = yield new RaceSolver({
-				horse,
-				course: this._course,
-				skills,
-				hp: hpPolicy,
-				rng: solverRng,
-				onSkillActivate: this._onSkillActivate,
-				onSkillDeactivate: this._onSkillDeactivate,
-				disableRushed: this._disableRushed,
-				disableDownhill: this._disableDownhill,
-				disableSectionModifier: this._disableSectionModifier,
-				skillCheckChance: this._skillCheckChance,
-				posKeepMode: this._posKeepMode,
-				mode: this._mode
-			});
+			const redo: boolean = yield this.getSolver(i);
 
 			if (redo) {
 				--i;
