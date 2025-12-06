@@ -41,6 +41,8 @@ function skillmeta(id: string) {
 
 import './app.css';
 
+declare const CC_GLOBAL: boolean;
+
 const baseSkillsToTest = Object.keys(skilldata).filter(id => skilldata[id].rarity < 3);
 
 const DEFAULT_SAMPLES = 500;
@@ -765,6 +767,7 @@ function App(props) {
 	const [nsamples, setSamples] = useState(DEFAULT_SAMPLES);
 	const [seed, setSeed] = useState(DEFAULT_SEED);
 	const [runOnceCounter, setRunOnceCounter] = useState(0);
+	const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
 	const [isSimulationRunning, setIsSimulationRunning] = useState(false);
 	const chartWorkersCompletedRef = useRef(0);
 	const [posKeepMode, setPosKeepModeRaw] = useState(PosKeepMode.Approximate);
@@ -791,7 +794,7 @@ function App(props) {
 	const [allowSectionModifierUma2, toggleSectionModifierUma2] = useReducer((b, _) => !b, true);
 	const [allowSkillCheckChanceUma1, toggleSkillCheckChanceUma1] = useReducer((b, _) => !b, true);
 	const [allowSkillCheckChanceUma2, toggleSkillCheckChanceUma2] = useReducer((b, _) => !b, true);
-	const [simWitVariance, toggleSimWitVariance] = useReducer((b, _) => !b, false);
+	const [simWitVariance, toggleSimWitVariance] = useReducer((b, _) => !b, true);
 	const [showWitVarianceSettings, setShowWitVarianceSettings] = useState(false);
 	const [showVirtualPacemakerOnGraph, toggleShowVirtualPacemakerOnGraph] = useReducer((b, _) => !b, false);
 	const [pacemakerCount, setPacemakerCount] = useState(1);
@@ -1223,8 +1226,7 @@ function App(props) {
 	}
 
 	function basinnChartSelection(skillId) {
-		const r = tableData.get(skillId);
-		if (r.runData != null) setResults(r);
+		setSelectedSkillId(skillId);
 	}
 
 	function addSkillFromTable(skillId) {
@@ -1253,6 +1255,15 @@ function App(props) {
 		document.addEventListener('click', handleClickOutside);
 		return () => document.removeEventListener('click', handleClickOutside);
 	}, [isPacemakerDropdownOpen]);
+
+	useEffect(function () {
+		if (selectedSkillId && tableData.has(selectedSkillId)) {
+			const r = tableData.get(selectedSkillId);
+			if (r && r.runData != null) {
+				setResults(r);
+			}
+		}
+	}, [tableData, selectedSkillId]);
 
 	function rtMouseMove(pos) {
 		if (chartData == null) return;
@@ -1488,7 +1499,7 @@ function App(props) {
 					<div id="resultsHelp">Negative numbers mean <strong style="color:#2a77c5">Umamusume 1</strong> is faster, positive numbers mean <strong style="color:#c52a2a">Umamusume 2</strong> is faster.</div>
 
 
-					{(firstUmaStats || staminaStats) && (
+					{simWitVariance && (firstUmaStats || staminaStats) && (
 						<div style={{ marginTop: '15px', marginBottom: '10px', textAlign: 'center' }}>
 							{firstUmaStats && (
 								<div style={{ marginBottom: '2px', display: 'flex', justifyContent: 'center', gap: '40px' }}>
@@ -1523,7 +1534,15 @@ function App(props) {
 						</div>
 					)}
 
-					<Histogram width={500} height={333} data={results} />
+
+
+					{simWitVariance ? (
+						<Histogram width={500} height={333} data={results} />
+					) : (
+						<div style={{ marginTop: '15px', marginBottom: '10px', textAlign: 'center' }}>
+							<span style={{ color: 'red', fontWeight: 'bold', fontSize: '100px' }}>Turn on Wit Variance to see the Spurt Chart.</span>
+						</div>
+					)}
 				</div>
 				<div id="infoTables">
 					<table>
@@ -1633,8 +1652,25 @@ function App(props) {
 					style={{ padding: '8px', borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', cursor: 'pointer', backdropFilter: 'blur(5px)' }}>
 					{darkMode ? '☀️' : '🌙'}
 				</button>
+				<button
+					className="wit-variance-settings-btn"
+					onClick={() => setShowWitVarianceSettings(true)}
+					title="Configure Wit Variance settings"
+					disabled={!simWitVariance}
+					style={{ padding: '8px', borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', cursor: 'pointer', backdropFilter: 'blur(5px)' }}
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="12" r="3"></circle>
+						<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+					</svg>
+				</button>
 			</div>
 			{viewMode === 'classic' ? <ClassicLayout {...commonProps} /> : <ModernLayout {...commonProps} />}
+			<WitVarianceSettingsPopup
+				show={showWitVarianceSettings}
+				onClose={() => setShowWitVarianceSettings(false)}
+				{...commonProps.witVarianceProps}
+			/>
 		</div>
 	);
 }
