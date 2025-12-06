@@ -41,6 +41,8 @@ function skillmeta(id: string) {
 
 import './app.css';
 
+declare const CC_GLOBAL: boolean;
+
 const baseSkillsToTest = Object.keys(skilldata).filter(id => skilldata[id].rarity < 3);
 
 const DEFAULT_SAMPLES = 500;
@@ -136,7 +138,7 @@ const presetSources = buildGlobalPresetRecords(championsMeetings as ChampionMeet
 
 const presets = presetSources
 	.map(def => {
-		const cmIndex = def.type == EventType.CM && def.name ? CHAMPIONS_MEETING_LABELS.get(def.name) ?? null : null;
+		const cmIndex = def.type == EventType.CM && def.name ? CHAMPIONS_MEETING_LABELS.get(def.name as any) ?? null : null;
 		return {
 			type: def.type,
 			name: def.name,
@@ -305,7 +307,7 @@ export function BasinnChartPopover(props) {
 		popover.current.focus();
 	}, [popover.current, props.skillid]);
 	return (
-		<div class="basinnChartPopover" tabindex="1000" style="visibility:hidden" ref={popover}>
+		<div class="basinnChartPopover" tabIndex={1000} style="visibility:hidden" ref={popover}>
 			<ExpandedSkillDetails id={props.skillid} distanceFactor={props.courseDistance} dismissable={false} />
 			<Histogram width={500} height={333} data={props.results} />
 		</div>
@@ -765,12 +767,14 @@ function App(props) {
 	const [nsamples, setSamples] = useState(DEFAULT_SAMPLES);
 	const [seed, setSeed] = useState(DEFAULT_SEED);
 	const [runOnceCounter, setRunOnceCounter] = useState(0);
+	const [selectedSkillId, setSelectedSkillId] = useState<string | null>(null);
 	const [isSimulationRunning, setIsSimulationRunning] = useState(false);
 	const chartWorkersCompletedRef = useRef(0);
+	const chartProgressRef = useRef({ w1: { phase: 0, current: 0, total: 0 }, w2: { phase: 0, current: 0, total: 0 } });
 	const [posKeepMode, setPosKeepModeRaw] = useState(PosKeepMode.Approximate);
 	const [showHp, toggleShowHp] = useReducer((b, _) => !b, false);
 	const [showLanes, toggleShowLanes] = useReducer((b, _) => !b, false);
-	const [progress, setProgress] = useState({ current: 0, total: 0 });
+	const [progress, setProgress] = useState({ current: 0, total: 0, phase: 0, label: '' });
 
 	useEffect(() => { document.documentElement.classList.toggle('dark', darkMode); }, [darkMode]);
 
@@ -791,7 +795,7 @@ function App(props) {
 	const [allowSectionModifierUma2, toggleSectionModifierUma2] = useReducer((b, _) => !b, true);
 	const [allowSkillCheckChanceUma1, toggleSkillCheckChanceUma1] = useReducer((b, _) => !b, true);
 	const [allowSkillCheckChanceUma2, toggleSkillCheckChanceUma2] = useReducer((b, _) => !b, true);
-	const [simWitVariance, toggleSimWitVariance] = useReducer((b, _) => !b, false);
+	const [simWitVariance, toggleSimWitVariance] = useReducer((b, _) => !b, true);
 	const [showWitVarianceSettings, setShowWitVarianceSettings] = useState(false);
 	const [showVirtualPacemakerOnGraph, toggleShowVirtualPacemakerOnGraph] = useReducer((b, _) => !b, false);
 	const [pacemakerCount, setPacemakerCount] = useState(1);
@@ -869,13 +873,14 @@ function App(props) {
 	const setResults = setSimState;
 	const setChartData = setSimState;
 
-	const [tableData, updateTableData] = useReducer((data, newData) => {
-		const merged = new Map();
+	const [tableData, updateTableData] = useReducer((data: Map<string, any>, newData: any) => {
+		const merged = new Map(data);
 		if (newData == 'reset') {
-			return merged;
+			return new Map();
 		}
-		data.forEach((v, k) => merged.set(k, v));
-		newData.forEach((v, k) => merged.set(k, v));
+		if (newData instanceof Map) {
+			newData.forEach((v, k) => merged.set(k, v));
+		}
 		return merged;
 	}, new Map());
 
@@ -905,15 +910,80 @@ function App(props) {
 		const createWorker = () => {
 			const w = new Worker('./simulator.worker.js');
 			w.addEventListener('message', function (e) {
-				const { type, results, progress, total } = e.data;
+				const { type, results, progress, total, phase } = e.data;
 				switch (type) {
 					case 'compare':
 						if (progress !== undefined) {
-							setProgress({ current: progress, total });
+							console.log('Progress update:', progress, total);
+							setProgress({ current: progress, total, phase: 0, label: '' });
 						}
 						if (results) setResults(results);
 						break;
 					case 'chart':
+						if (phase !== undefined) {
+							const isWorker1 = w === worker1Ref.current;
+							const p = isWorker1 ? chartProgressRef.current.w1 : chartProgressRef.current.w2;
+							p.phase = phase;
+							p.current = progress;
+							p.total = total;
+
+							// Aggregate progress
+							// We display the phase of the slowest worker (min phase)
+							// And sum the progress if phases match, otherwise just show something reasonable
+							const p1 = chartProgressRef.current.w1;
+							const p2 = chartProgressRef.current.w2;
+							const minPhase = Math.min(p1.phase || 1, p2.phase || 1);
+							// If one worker is ahead in phase, its progress in the previous phase is effectively 100% (or total)
+							// But total changes between phases.
+							// Simplification: Just show "Phase X/4" and maybe sum of current/total if phases match.
+
+							let current = 0;
+							let totalSum = 0;
+
+							if (p1.phase == minPhase) {
+								current += p1.current;
+								totalSum += p1.total;
+							} else if (p1.phase > minPhase) {
+								// Worker 1 is ahead, so it finished minPhase. We don't know the exact total of minPhase anymore unless we stored it,
+								// but we can assume it's done.
+								// Actually, let's just show the progress of the current phase for each worker?
+								// "Phase 1/4 (50/100)"
+								// If phases mismatch, it's tricky.
+								// Let's just sum them if they match, or ignore the one ahead?
+								// If p1 is ahead, it means p2 is still in minPhase. So p1 contributes 0 to minPhase progress?
+								// No, if p1 is ahead, it completed minPhase.
+							}
+
+							// Better approach: Just show "Phase X/4" and the sum of items processed in that phase.
+							// If phases mismatch, we are in the transition.
+							// Let's just use the minimum phase.
+
+							if (p1.phase == p2.phase) {
+								current = p1.current + p2.current;
+								totalSum = p1.total + p2.total;
+							} else {
+								// Mismatch. 
+								// e.g. w1 is phase 2, w2 is phase 1.
+								// We are effectively in phase 1.
+								// w1 is done with phase 1.
+								// We don't have w1's phase 1 total anymore.
+								// So just show w2's progress?
+								if (p1.phase < p2.phase) {
+									current = p1.current;
+									totalSum = p1.total;
+								} else {
+									current = p2.current;
+									totalSum = p2.total;
+								}
+							}
+
+							setProgress({
+								current,
+								total: totalSum,
+								phase: minPhase,
+								label: `Phase ${minPhase}/4`
+							});
+						}
 						updateTableData(results);
 						break;
 					case 'compare-complete':
@@ -1080,7 +1150,7 @@ function App(props) {
 	function doComparison() {
 		postEvent('doComparison', {});
 		setIsSimulationRunning(true);
-		setProgress({ current: 0, total: nsamples });
+		setProgress({ current: 0, total: nsamples, phase: 0, label: '' });
 		worker1Ref.current?.postMessage({
 			msg: 'compare',
 			data: {
@@ -1112,7 +1182,7 @@ function App(props) {
 	function doRunOnce() {
 		postEvent('doRunOnce', {});
 		setIsSimulationRunning(true);
-		setProgress({ current: 0, total: 1 });
+		setProgress({ current: 0, total: 1, phase: 0, label: '' });
 		const effectiveSeed = seed + runOnceCounter;
 		setRunOnceCounter(prev => prev + 1);
 		worker1Ref.current?.postMessage({
@@ -1223,8 +1293,7 @@ function App(props) {
 	}
 
 	function basinnChartSelection(skillId) {
-		const r = tableData.get(skillId);
-		if (r.runData != null) setResults(r);
+		setSelectedSkillId(skillId);
 	}
 
 	function addSkillFromTable(skillId) {
@@ -1253,6 +1322,15 @@ function App(props) {
 		document.addEventListener('click', handleClickOutside);
 		return () => document.removeEventListener('click', handleClickOutside);
 	}, [isPacemakerDropdownOpen]);
+
+	useEffect(function () {
+		if (selectedSkillId && tableData.has(selectedSkillId)) {
+			const r = tableData.get(selectedSkillId);
+			if (r && r.runData != null) {
+				setResults(r);
+			}
+		}
+	}, [tableData, selectedSkillId]);
 
 	function rtMouseMove(pos) {
 		if (chartData == null) return;
@@ -1295,7 +1373,7 @@ function App(props) {
 		{ stroke: 'rgb(197, 42, 42)', fill: 'rgba(197, 42, 42, 0.7)' }
 	];
 	const skillActivations = chartData == null ? [] : chartData.sk.flatMap((a, i) => {
-		return Array.from(a.keys()).flatMap(id => {
+		return Array.from(a.keys()).map((id: string) => {
 			if (NO_SHOW.indexOf(skillmeta(id).iconId) > -1) return [];
 			else return a.get(id).map(ar => ({
 				type: RegionDisplayType.Textbox,
@@ -1305,7 +1383,7 @@ function App(props) {
 				umaIndex: i,
 				regions: [{ start: ar[0], end: ar[1] }]
 			}));
-		});
+		}).reduce((acc, val) => acc.concat(val), []);
 	});
 
 	const rushedColors = [
@@ -1488,7 +1566,7 @@ function App(props) {
 					<div id="resultsHelp">Negative numbers mean <strong style="color:#2a77c5">Umamusume 1</strong> is faster, positive numbers mean <strong style="color:#c52a2a">Umamusume 2</strong> is faster.</div>
 
 
-					{(firstUmaStats || staminaStats) && (
+					{simWitVariance && (firstUmaStats || staminaStats) && (
 						<div style={{ marginTop: '15px', marginBottom: '10px', textAlign: 'center' }}>
 							{firstUmaStats && (
 								<div style={{ marginBottom: '2px', display: 'flex', justifyContent: 'center', gap: '40px' }}>
@@ -1523,7 +1601,15 @@ function App(props) {
 						</div>
 					)}
 
-					<Histogram width={500} height={333} data={results} />
+
+
+					{simWitVariance ? (
+						<Histogram width={500} height={333} data={results} />
+					) : (
+						<div style={{ marginTop: '15px', marginBottom: '10px', textAlign: 'center' }}>
+							<span style={{ color: 'red', fontWeight: 'bold', fontSize: '100px' }}>Turn on Wit Variance to see the Spurt Chart.</span>
+						</div>
+					)}
 				</div>
 				<div id="infoTables">
 					<table>
@@ -1541,11 +1627,11 @@ function App(props) {
 						</tbody>
 						{chartData.sk[0].size > 0 &&
 							<tbody>
-								{Array.from(chartData.sk[0].entries()).map(([id, ars]) => ars.flatMap(pos =>
+								{Array.from(chartData.sk[0].entries()).map(([id, ars]) => (ars as any[]).reduce((acc, pos) => acc.concat(
 									<tr>
 										<th>{skillnames[id][0]}</th>
 										<td>{`${pos[0].toFixed(2)} m – ${pos[1].toFixed(2)} m`}</td>
-									</tr>))}
+									</tr>), []))}
 							</tbody>}
 					</table>
 					<table>
@@ -1563,11 +1649,11 @@ function App(props) {
 						</tbody>
 						{chartData.sk[1].size > 0 &&
 							<tbody>
-								{Array.from(chartData.sk[1].entries()).map(([id, ars]) => ars.flatMap(pos =>
+								{Array.from(chartData.sk[1].entries()).map(([id, ars]) => (ars as any[]).reduce((acc, pos) => acc.concat(
 									<tr>
 										<th>{skillnames[id][0]}</th>
 										<td>{`${pos[0].toFixed(2)} m – ${pos[1].toFixed(2)} m`}</td>
-									</tr>))}
+									</tr>), []))}
 							</tbody>}
 					</table>
 				</div>
@@ -1608,15 +1694,17 @@ function App(props) {
 		resetAllUmas, copyUmaToRight, copyUmaToLeft, swapUmas, racedef, racesetter, setRaceDef,
 		mode, updateUiState, isSimulationRunning, doComparison, doBasinnChart, doRunOnce,
 		nsamples, setSamples, seed, setSeed, setRunOnceCounter, posKeepMode, setPosKeepMode, copyStateUrl,
-		showHp, toggleShowHp, showLanes, toggleShowLanes, showVirtualPacemakerOnGraph,
+		showHp, toggleShowHp: () => toggleShowHp(null), showLanes, toggleShowLanes: () => toggleShowLanes(null), showVirtualPacemakerOnGraph,
 		pacemakerCount, handlePacemakerCountChange, selectedPacemakerIndices, togglePacemakerSelection,
 		isPacemakerDropdownOpen, setIsPacemakerDropdownOpen, getSelectedPacemakers,
 		simWitVariance, handleSimWitVarianceToggle, showWitVarianceSettings, setShowWitVarianceSettings,
 		witVarianceProps: {
 			allowRushedUma1, allowRushedUma2, allowDownhillUma1, allowDownhillUma2,
 			allowSectionModifierUma1, allowSectionModifierUma2, allowSkillCheckChanceUma1, allowSkillCheckChanceUma2,
-			toggleRushedUma1, toggleRushedUma2, toggleDownhillUma1, toggleDownhillUma2,
-			toggleSectionModifierUma1, toggleSectionModifierUma2, toggleSkillCheckChanceUma1, toggleSkillCheckChanceUma2
+			toggleRushedUma1: () => toggleRushedUma1(null), toggleRushedUma2: () => toggleRushedUma2(null),
+			toggleDownhillUma1: () => toggleDownhillUma1(null), toggleDownhillUma2: () => toggleDownhillUma2(null),
+			toggleSectionModifierUma1: () => toggleSectionModifierUma1(null), toggleSectionModifierUma2: () => toggleSectionModifierUma2(null),
+			toggleSkillCheckChanceUma1: () => toggleSkillCheckChanceUma1(null), toggleSkillCheckChanceUma2: () => toggleSkillCheckChanceUma2(null)
 		},
 		expanded, toggleExpand, currentIdx, resultsContent: resultsPane, popoverSkill, tableData,
 		progress
@@ -1633,8 +1721,25 @@ function App(props) {
 					style={{ padding: '8px', borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', cursor: 'pointer', backdropFilter: 'blur(5px)' }}>
 					{darkMode ? '☀️' : '🌙'}
 				</button>
+				<button
+					className="wit-variance-settings-btn"
+					onClick={() => setShowWitVarianceSettings(true)}
+					title="Configure Wit Variance settings"
+					disabled={!simWitVariance}
+					style={{ padding: '8px', borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.5)', color: 'white', cursor: 'pointer', backdropFilter: 'blur(5px)' }}
+				>
+					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="12" cy="12" r="3"></circle>
+						<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+					</svg>
+				</button>
 			</div>
 			{viewMode === 'classic' ? <ClassicLayout {...commonProps} /> : <ModernLayout {...commonProps} />}
+			<WitVarianceSettingsPopup
+				show={showWitVarianceSettings}
+				onClose={() => setShowWitVarianceSettings(false)}
+				{...commonProps.witVarianceProps}
+			/>
 		</div>
 	);
 }

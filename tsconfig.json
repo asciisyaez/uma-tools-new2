@@ -1,10 +1,15 @@
 {
 	"compilerOptions": {
-		"lib": ["es2018", "dom"],
+		"lib": [
+			"es2018",
+			"dom"
+		],
 		"target": "es2018",
 		"resolveJsonModule": true,
 		"moduleResolution": "bundler",
+		"maxNodeModuleJsDepth": 1,
 		"allowImportingTsExtensions": true,
+		"noEmit": true,
 		"esModuleInterop": true,
 		"skipLibCheck": true,
 		"preserveConstEnums": true,

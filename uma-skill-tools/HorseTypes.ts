@@ -1,4 +1,4 @@
-import { strict as assert } from 'node:assert';
+import { strict as assert } from 'assert';
 
 export const enum Strategy { Nige = 1, Senkou, Sasi, Oikomi, Oonige }
 export const enum Aptitude { S, A, B, C, D, E, F, G }
@@ -18,7 +18,7 @@ export interface HorseParameters {
 
 export namespace StrategyHelpers {
 	export function assertIsStrategy(strategy: number): asserts strategy is Strategy {
-		assert(Strategy.hasOwnProperty(strategy));
+		assert(strategy >= Strategy.Nige && strategy <= Strategy.Oonige);
 	}
 
 	export function strategyMatches(s1: Strategy, s2: Strategy) {
