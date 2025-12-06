@@ -572,7 +572,6 @@ export class ComparisonSession {
 			const s1Stats = s1IsUma1 ? this.staminaStats.uma1 : this.staminaStats.uma2;
 			s1Stats.total++;
 			if (s1.hpDied) {
-				console.log(`[StaminaDebug] s1 died! HP: ${(s1.hp as any).hp}, MaxHP: ${(s1.hp as any).maxHp}`);
 				s1Stats.hpDiedCount++;
 			}
 			if (s1.fullSpurt) {
@@ -583,7 +582,6 @@ export class ComparisonSession {
 			const s2Stats = s2IsUma1 ? this.staminaStats.uma1 : this.staminaStats.uma2;
 			s2Stats.total++;
 			if (s2.hpDied) {
-				console.log(`[StaminaDebug] s2 died! HP: ${(s2.hp as any).hp}, MaxHP: ${(s2.hp as any).maxHp}`);
 				s2Stats.hpDiedCount++;
 			}
 			if (s2.fullSpurt) {
