@@ -8,7 +8,7 @@ import { program, Option } from 'commander';
 
 program
 	.option('--debug')
-	.addOption(new Option('--serve [port]', 'run development server on [port]').preset(8000).implies({debug: true}));
+	.addOption(new Option('--serve [port]', 'run development server on [port]').preset(8000).implies({ debug: true }));
 
 program.parse();
 const options = program.opts();
@@ -22,13 +22,13 @@ const root = path.join(dirname, '..', '..');
 const redirectData = {
 	name: 'redirectData',
 	setup(build) {
-		build.onResolve({filter: /^\.\.?(?:\/uma-skill-tools)?\/data\//}, args => ({
+		build.onResolve({ filter: /^\.\.?(?:\/uma-skill-tools)?\/data\// }, args => ({
 			path: path.join(dirname, args.path.split('/data/')[1])
 		}));
-		build.onResolve({filter: /skill_meta.json$/}, args => ({
+		build.onResolve({ filter: /skill_meta.json$/ }, args => ({
 			path: path.join(dirname, 'skill_meta.json')
 		}));
-		build.onResolve({filter: /umas.json$/}, args => ({
+		build.onResolve({ filter: /umas.json$/ }, args => ({
 			path: path.join(dirname, 'umas.json')
 		}));
 	}
@@ -38,11 +38,11 @@ const mockAssertFn = debug ? 'console.assert' : 'function(){}';
 const mockAssert = {
 	name: 'mockAssert',
 	setup(build) {
-		build.onResolve({filter: /^node:assert$/}, args => ({
+		build.onResolve({ filter: /^(node:)?assert$/ }, args => ({
 			path: args.path, namespace: 'mockAssert-ns'
 		}));
-		build.onLoad({filter: /.*/, namespace: 'mockAssert-ns'}, () => ({
-			contents: 'module.exports={strict:'+mockAssertFn+'};',
+		build.onLoad({ filter: /.*/, namespace: 'mockAssert-ns' }, () => ({
+			contents: 'module.exports={strict:' + mockAssertFn + '};',
 			loader: 'js'
 		}));
 	}
@@ -51,7 +51,7 @@ const mockAssert = {
 const redirectTable = {
 	name: 'redirectTable',
 	setup(build) {
-		build.onResolve({filter: /^@tanstack\//}, args => ({
+		build.onResolve({ filter: /^@tanstack\// }, args => ({
 			path: path.join(dirname, '..', 'vendor', args.path.slice(10), 'index.ts')
 		}));
 	}
@@ -60,11 +60,11 @@ const redirectTable = {
 const seedrandomPlugin = {
 	name: 'seedrandomPlugin',
 	setup(build) {
-		build.onResolve({filter: /^seedrandom$/}, args => ({
+		build.onResolve({ filter: /^seedrandom$/ }, args => ({
 			path: args.path,
 			namespace: 'seedrandom-ns'
 		}));
-		build.onLoad({filter: /.*/, namespace: 'seedrandom-ns'}, () => ({
+		build.onLoad({ filter: /.*/, namespace: 'seedrandom-ns' }, () => ({
 			contents: `
 // Simple seedrandom implementation for browser
 export default function seedrandom(seed) {
@@ -96,15 +96,31 @@ export default function seedrandom(seed) {
 	}
 };
 
+const immutableSortedPatch = {
+	name: 'immutableSortedPatch',
+	setup(build) {
+		build.onLoad({ filter: /immutable.*\.js$/ }, async (args) => {
+			if (!args.path.includes('immutable-sorted')) return;
+			let contents = await fs.promises.readFile(args.path, 'utf8');
+			// Fix swallowed error 112
+			contents = contents.replace(
+				/(\s)([\w$]+)\(112,\s*['"]leaves are not on the same level['"]\)/g,
+				'$1return $2(112, "leaves are not on the same level")'
+			);
+			return { contents, loader: 'js' };
+		});
+	}
+};
+
 const buildOptions = {
-	entryPoints: [{in: '../umalator/app.tsx', out: 'bundle'}, '../umalator/simulator.worker.ts'],
+	entryPoints: [{ in: '../umalator/app.tsx', out: 'bundle' }, '../umalator/simulator.worker.ts'],
 	bundle: true,
 	minify: !debug,
 	outdir: '.',
 	write: !serve,
-	define: {CC_DEBUG: debug.toString(), CC_GLOBAL: 'true'},
+	define: { CC_DEBUG: debug.toString(), CC_GLOBAL: 'true' },
 	external: ['*.ttf'],
-	plugins: [redirectData, mockAssert, redirectTable, seedrandomPlugin]
+	plugins: [redirectData, mockAssert, redirectTable, seedrandomPlugin, immutableSortedPatch]
 };
 
 const MIME_TYPES = {
@@ -157,7 +173,7 @@ function runServer(ctx, port) {
 			const exists = await fs.promises.access(fp).then(() => true, () => false);
 			if (exists) {
 				console.log(`GET ${req.url} 200 OK`);
-				res.writeHead(200, {'Content-type': MIME_TYPES[path.extname(filename)] || 'application/octet-stream'});
+				res.writeHead(200, { 'Content-type': MIME_TYPES[path.extname(filename)] || 'application/octet-stream' });
 				fs.createReadStream(fp).pipe(res);
 			} else {
 				console.log(`GET ${req.url} 404 Not Found`)
