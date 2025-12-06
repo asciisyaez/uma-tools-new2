@@ -1,4 +1,4 @@
-import { strict as assert } from 'node:assert';
+import { strict as assert } from 'assert';
 
 import { CourseData, CourseHelpers, Phase } from './CourseData';
 import { HorseParameters, Strategy, StrategyHelpers } from './HorseTypes';
@@ -48,7 +48,7 @@ export class EqOperator {
 
 export class NeqOperator {
 	samplePolicy: ActivationSamplePolicy
-	
+
 	constructor(readonly condition: Condition, readonly argument: number) {
 		this.samplePolicy = condition.samplePolicy;
 	}
@@ -60,7 +60,7 @@ export class NeqOperator {
 
 export class LtOperator {
 	samplePolicy: ActivationSamplePolicy
-	
+
 	constructor(readonly condition: Condition, readonly argument: number) {
 		this.samplePolicy = condition.samplePolicy;
 	}
@@ -72,7 +72,7 @@ export class LtOperator {
 
 export class LteOperator {
 	samplePolicy: ActivationSamplePolicy
-	
+
 	constructor(readonly condition: Condition, readonly argument: number) {
 		this.samplePolicy = condition.samplePolicy;
 	}
@@ -84,7 +84,7 @@ export class LteOperator {
 
 export class GtOperator {
 	samplePolicy: ActivationSamplePolicy
-	
+
 	constructor(readonly condition: Condition, readonly argument: number) {
 		this.samplePolicy = condition.samplePolicy;
 	}
@@ -96,7 +96,7 @@ export class GtOperator {
 
 export class GteOperator {
 	samplePolicy: ActivationSamplePolicy
-	
+
 	constructor(readonly condition: Condition, readonly argument: number) {
 		this.samplePolicy = condition.samplePolicy;
 	}
@@ -180,8 +180,8 @@ const noopAll = Object.freeze({
 	filterGte: noop
 });
 
-export const noopImmediate = Object.freeze(Object.assign({samplePolicy: ImmediatePolicy}, noopAll));
-export const noopRandom = Object.freeze(Object.assign({samplePolicy: RandomPolicy}, noopAll));
+export const noopImmediate = Object.freeze(Object.assign({ samplePolicy: ImmediatePolicy }, noopAll));
+export const noopRandom = Object.freeze(Object.assign({ samplePolicy: RandomPolicy }, noopAll));
 
 const defaultImmediate = Object.freeze({
 	samplePolicy: ImmediatePolicy,
@@ -401,7 +401,7 @@ function orderOutFilter(rate: number) {
 	temptation_count_behind, temptation_count_infront, track_id, up_slope_random, weather
 */
 
-export const Conditions: {[cond: string]: Condition} = Object.freeze({
+export const Conditions: { [cond: string]: Condition } = Object.freeze({
 	accumulatetime: immediate({
 		filterGte(regions: RegionList, t: number, _0: CourseData, _1: HorseParameters, extra: RaceParameters) {
 			return [regions, (s: RaceState) => s.accumulatetime.t >= t] as [RegionList, DynamicCondition];
@@ -409,10 +409,10 @@ export const Conditions: {[cond: string]: Condition} = Object.freeze({
 	}),
 	activate_count_all: immediate({
 		filterLte(regions: RegionList, n: number, _0: CourseData, _1: HorseParameters, extra: RaceParameters) {
-			return [regions, (s: RaceState) => s.activateCount.reduce((a,b) => a + b) <= n] as [RegionList, DynamicCondition];
+			return [regions, (s: RaceState) => s.activateCount.reduce((a, b) => a + b) <= n] as [RegionList, DynamicCondition];
 		},
 		filterGte(regions: RegionList, n: number, _0: CourseData, _1: HorseParameters, extra: RaceParameters) {
-			return [regions, (s: RaceState) => s.activateCount.reduce((a,b) => a + b) >= n] as [RegionList, DynamicCondition];
+			return [regions, (s: RaceState) => s.activateCount.reduce((a, b) => a + b) >= n] as [RegionList, DynamicCondition];
 		}
 	}),
 	activate_count_end_after: immediate({
@@ -739,17 +739,17 @@ export const Conditions: {[cond: string]: Condition} = Object.freeze({
 			// NB. not entirely sure these are correct, based on some vague remarks made by kuromi once
 			let f;
 			switch (case_) {
-			case 1:
-				f = (s: RaceState) => s.isLastSpurt && s.lastSpurtTransition != -1;
-				break;
-			case 2:
-				f = (s: RaceState) => s.isLastSpurt && s.lastSpurtTransition == -1;
-				break;
-			case 3:
-				f = (s: RaceState) => !s.isLastSpurt;
-				break;
-			default:
-				assert(1 <= case_ && case_ <= 3, 'lastspurt case must be 1-3');
+				case 1:
+					f = (s: RaceState) => s.isLastSpurt && s.lastSpurtTransition != -1;
+					break;
+				case 2:
+					f = (s: RaceState) => s.isLastSpurt && s.lastSpurtTransition == -1;
+					break;
+				case 3:
+					f = (s: RaceState) => !s.isLastSpurt;
+					break;
+				default:
+					assert(1 <= case_ && case_ <= 3, 'lastspurt case must be 1-3');
 			}
 			const bounds = new Region(CourseHelpers.phaseStart(course.distance, 2), course.distance);
 			return [regions.rmap(r => r.intersect(bounds)), f] as [RegionList, DynamicCondition];
@@ -887,7 +887,7 @@ export const Conditions: {[cond: string]: Condition} = Object.freeze({
 	post_number: (function () {
 		function gateBlock(s: RaceState, numUmas: number) {
 			const gateNumber = s.gateRoll % numUmas;  // modulo result guaranteed to be uniformly distributed due to the properties of s.gateRoll
-			                                          // see comment in RaceSolver.ts where gateRoll is initialized
+			// see comment in RaceSolver.ts where gateRoll is initialized
 			if (gateNumber < 9) return gateNumber;
 			else return 1 + (24 - gateNumber) % 8;
 		}
@@ -952,10 +952,10 @@ export const Conditions: {[cond: string]: Condition} = Object.freeze({
 		(_: CourseData, horse: HorseParameters, extra: RaceParameters) => +StrategyHelpers.strategyMatches(horse.strategy, Strategy.Oikomi)
 	),
 	running_style_equal_popularity_one: noopImmediate,
-	running_style_temptation_count_nige: noopSectionRandom(2,9),
-	running_style_temptation_count_senko: noopSectionRandom(2,9),
-	running_style_temptation_count_sashi: noopSectionRandom(2,9),
-	running_style_temptation_count_oikomi: noopSectionRandom(2,9),
+	running_style_temptation_count_nige: noopSectionRandom(2, 9),
+	running_style_temptation_count_senko: noopSectionRandom(2, 9),
+	running_style_temptation_count_sashi: noopSectionRandom(2, 9),
+	running_style_temptation_count_oikomi: noopSectionRandom(2, 9),
 	same_skill_horse_count: noopImmediate,
 	season: valueFilter((_0: CourseData, _1: HorseParameters, extra: RaceParameters) => extra.season),
 	slope: immediate({
@@ -997,8 +997,8 @@ export const Conditions: {[cond: string]: Condition} = Object.freeze({
 		filterGte: notSupported
 	},
 	temptation_count: noopImmediate,
-	temptation_count_behind: noopSectionRandom(2,9),
-	temptation_count_infront: noopSectionRandom(2,9),
+	temptation_count_behind: noopSectionRandom(2, 9),
+	temptation_count_infront: noopSectionRandom(2, 9),
 	time: valueFilter((_0: CourseData, _1: HorseParameters, extra: RaceParameters) => extra.time),
 	track_id: valueFilter((course: CourseData, _: HorseParameters, extra: RaceParameters) => course.raceTrackId),
 	up_slope_random: random({

@@ -138,7 +138,7 @@ const presetSources = buildGlobalPresetRecords(championsMeetings as ChampionMeet
 
 const presets = presetSources
 	.map(def => {
-		const cmIndex = def.type == EventType.CM && def.name ? CHAMPIONS_MEETING_LABELS.get(def.name) ?? null : null;
+		const cmIndex = def.type == EventType.CM && def.name ? CHAMPIONS_MEETING_LABELS.get(def.name as any) ?? null : null;
 		return {
 			type: def.type,
 			name: def.name,
@@ -307,7 +307,7 @@ export function BasinnChartPopover(props) {
 		popover.current.focus();
 	}, [popover.current, props.skillid]);
 	return (
-		<div class="basinnChartPopover" tabindex="1000" style="visibility:hidden" ref={popover}>
+		<div class="basinnChartPopover" tabIndex={1000} style="visibility:hidden" ref={popover}>
 			<ExpandedSkillDetails id={props.skillid} distanceFactor={props.courseDistance} dismissable={false} />
 			<Histogram width={500} height={333} data={props.results} />
 		</div>
@@ -873,13 +873,14 @@ function App(props) {
 	const setResults = setSimState;
 	const setChartData = setSimState;
 
-	const [tableData, updateTableData] = useReducer((data, newData) => {
-		const merged = new Map();
+	const [tableData, updateTableData] = useReducer((data: Map<string, any>, newData: any) => {
+		const merged = new Map(data);
 		if (newData == 'reset') {
-			return merged;
+			return new Map();
 		}
-		data.forEach((v, k) => merged.set(k, v));
-		newData.forEach((v, k) => merged.set(k, v));
+		if (newData instanceof Map) {
+			newData.forEach((v, k) => merged.set(k, v));
+		}
 		return merged;
 	}, new Map());
 
@@ -904,7 +905,6 @@ function App(props) {
 
 	const worker1Ref = useRef<Worker | null>(null);
 	const worker2Ref = useRef<Worker | null>(null);
-	const chartProgressRef = useRef({ w1: { phase: 0, current: 0, total: 0 }, w2: { phase: 0, current: 0, total: 0 } });
 
 	useEffect(() => {
 		const createWorker = () => {
@@ -1373,7 +1373,7 @@ function App(props) {
 		{ stroke: 'rgb(197, 42, 42)', fill: 'rgba(197, 42, 42, 0.7)' }
 	];
 	const skillActivations = chartData == null ? [] : chartData.sk.flatMap((a, i) => {
-		return Array.from(a.keys()).flatMap(id => {
+		return Array.from(a.keys()).map((id: string) => {
 			if (NO_SHOW.indexOf(skillmeta(id).iconId) > -1) return [];
 			else return a.get(id).map(ar => ({
 				type: RegionDisplayType.Textbox,
@@ -1383,7 +1383,7 @@ function App(props) {
 				umaIndex: i,
 				regions: [{ start: ar[0], end: ar[1] }]
 			}));
-		});
+		}).reduce((acc, val) => acc.concat(val), []);
 	});
 
 	const rushedColors = [
@@ -1627,11 +1627,11 @@ function App(props) {
 						</tbody>
 						{chartData.sk[0].size > 0 &&
 							<tbody>
-								{Array.from(chartData.sk[0].entries()).map(([id, ars]) => ars.flatMap(pos =>
+								{Array.from(chartData.sk[0].entries()).map(([id, ars]) => (ars as any[]).reduce((acc, pos) => acc.concat(
 									<tr>
 										<th>{skillnames[id][0]}</th>
 										<td>{`${pos[0].toFixed(2)} m – ${pos[1].toFixed(2)} m`}</td>
-									</tr>))}
+									</tr>), []))}
 							</tbody>}
 					</table>
 					<table>
@@ -1649,11 +1649,11 @@ function App(props) {
 						</tbody>
 						{chartData.sk[1].size > 0 &&
 							<tbody>
-								{Array.from(chartData.sk[1].entries()).map(([id, ars]) => ars.flatMap(pos =>
+								{Array.from(chartData.sk[1].entries()).map(([id, ars]) => (ars as any[]).reduce((acc, pos) => acc.concat(
 									<tr>
 										<th>{skillnames[id][0]}</th>
 										<td>{`${pos[0].toFixed(2)} m – ${pos[1].toFixed(2)} m`}</td>
-									</tr>))}
+									</tr>), []))}
 							</tbody>}
 					</table>
 				</div>
@@ -1694,15 +1694,17 @@ function App(props) {
 		resetAllUmas, copyUmaToRight, copyUmaToLeft, swapUmas, racedef, racesetter, setRaceDef,
 		mode, updateUiState, isSimulationRunning, doComparison, doBasinnChart, doRunOnce,
 		nsamples, setSamples, seed, setSeed, setRunOnceCounter, posKeepMode, setPosKeepMode, copyStateUrl,
-		showHp, toggleShowHp, showLanes, toggleShowLanes, showVirtualPacemakerOnGraph,
+		showHp, toggleShowHp: () => toggleShowHp(null), showLanes, toggleShowLanes: () => toggleShowLanes(null), showVirtualPacemakerOnGraph,
 		pacemakerCount, handlePacemakerCountChange, selectedPacemakerIndices, togglePacemakerSelection,
 		isPacemakerDropdownOpen, setIsPacemakerDropdownOpen, getSelectedPacemakers,
 		simWitVariance, handleSimWitVarianceToggle, showWitVarianceSettings, setShowWitVarianceSettings,
 		witVarianceProps: {
 			allowRushedUma1, allowRushedUma2, allowDownhillUma1, allowDownhillUma2,
 			allowSectionModifierUma1, allowSectionModifierUma2, allowSkillCheckChanceUma1, allowSkillCheckChanceUma2,
-			toggleRushedUma1, toggleRushedUma2, toggleDownhillUma1, toggleDownhillUma2,
-			toggleSectionModifierUma1, toggleSectionModifierUma2, toggleSkillCheckChanceUma1, toggleSkillCheckChanceUma2
+			toggleRushedUma1: () => toggleRushedUma1(null), toggleRushedUma2: () => toggleRushedUma2(null),
+			toggleDownhillUma1: () => toggleDownhillUma1(null), toggleDownhillUma2: () => toggleDownhillUma2(null),
+			toggleSectionModifierUma1: () => toggleSectionModifierUma1(null), toggleSectionModifierUma2: () => toggleSectionModifierUma2(null),
+			toggleSkillCheckChanceUma1: () => toggleSkillCheckChanceUma1(null), toggleSkillCheckChanceUma2: () => toggleSkillCheckChanceUma2(null)
 		},
 		expanded, toggleExpand, currentIdx, resultsContent: resultsPane, popoverSkill, tableData,
 		progress
