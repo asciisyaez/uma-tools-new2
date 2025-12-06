@@ -1169,7 +1169,7 @@ function App(props) {
 					allowDownhillUma2: simWitVariance ? allowDownhillUma2 : false,
 					allowSectionModifierUma1: simWitVariance ? allowSectionModifierUma1 : false,
 					allowSectionModifierUma2: simWitVariance ? allowSectionModifierUma2 : false,
-					useEnhancedSpurt: false,
+					useEnhancedSpurt: true,
 					accuracyMode: false,
 					skillCheckChanceUma1: simWitVariance ? allowSkillCheckChanceUma1 : false,
 					skillCheckChanceUma2: simWitVariance ? allowSkillCheckChanceUma2 : false,

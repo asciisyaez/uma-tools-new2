@@ -19,12 +19,7 @@ import { LayoutProps } from './LayoutProps';
 import './ModernLayout.css';
 
 export function ModernLayout(props: LayoutProps) {
-    // #region agent log
-    try {
-        fetch('http://127.0.0.1:7242/ingest/55378581-5a28-41f0-af92-85de3c6247dc', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ location: 'umalator/ModernLayout.tsx:22', message: 'ModernLayout Render Start', data: { width: window.innerWidth, mode: props.mode }, timestamp: Date.now(), sessionId: 'debug-session', runId: 'run1', hypothesisId: 'hyp_stale_deploy' }) }).catch(() => { });
-        console.log('ModernLayout v2.1 rendering', { width: window.innerWidth });
-    } catch (e) { }
-    // #endregion
+
     const {
         lang, strings, courseId, setCourseId, course, chartData, rtMouseMove, rtMouseLeave, handleSkillDrag,
         skillActivations, rushedIndicators, posKeepLabels, uma1, setUma1, uma2, setUma2, pacer, setPacer,
