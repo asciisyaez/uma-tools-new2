@@ -1,2 +1,5 @@
 node_modules/
 .playwright-mcp/
+umalator-global/bundle.js
+umalator-global/bundle.css
+umalator-global/simulator.worker.js
