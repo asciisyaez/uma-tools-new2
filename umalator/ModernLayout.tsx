@@ -123,10 +123,14 @@ export function ModernLayout(props: LayoutProps) {
                                             {mode == Mode.Compare
                                                 ? <button className="glass-button primary" onClick={doComparison} disabled={isSimulationRunning}>
                                                     {isSimulationRunning && progress.total > 0
-                                                        ? `Running (${Math.round(progress.current / progress.total * 100)}%)`
+                                                        ? `Running (${progress.current}/${progress.total})`
                                                         : 'COMPARE'}
                                                 </button>
-                                                : <button className="glass-button primary" onClick={doBasinnChart} disabled={isSimulationRunning}>RUN</button>
+                                                : <button className="glass-button primary" onClick={doBasinnChart} disabled={isSimulationRunning}>
+                                                    {isSimulationRunning && progress.label
+                                                        ? `Running (${progress.label})`
+                                                        : 'RUN'}
+                                                </button>
                                             }
                                             {mode == Mode.Compare &&
                                                 <button className="glass-button secondary" onClick={doRunOnce} disabled={isSimulationRunning}>Run Once</button>
@@ -276,6 +280,6 @@ export function ModernLayout(props: LayoutProps) {
                     />
                 </div>
             </IntlProvider>
-        </Language.Provider>
+        </Language.Provider >
     );
 }

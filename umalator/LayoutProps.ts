@@ -104,5 +104,5 @@ export interface LayoutProps {
     // Popovers
     popoverSkill: string;
     tableData: any;
-    progress: { current: number; total: number };
+    progress: { current: number; total: number; phase: number; label: string };
 }
