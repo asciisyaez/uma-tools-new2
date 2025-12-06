@@ -562,6 +562,40 @@ export class ComparisonSession {
 			// Actually wait, that's not right either. Let me think...
 			// After [b,a]=[a,b], the generator that WAS producing uma1 is now in variable 'b'
 
+			// Determine which uma each solver represents based on current generator state
+			// s1 came from generator 'a': if aIsUma1, then s1 is uma1, else s1 is uma2  
+			// s2 came from generator 'b': if aIsUma1, then s2 is uma2, else s2 is uma1
+			const s1IsUma1 = this.aIsUma1;
+			const s2IsUma1 = !this.aIsUma1;
+
+			// Track stats for s1's uma
+			const s1Stats = s1IsUma1 ? this.staminaStats.uma1 : this.staminaStats.uma2;
+			s1Stats.total++;
+			if (s1.hpDied) {
+				console.log(`[StaminaDebug] s1 died! HP: ${(s1.hp as any).hp}, MaxHP: ${(s1.hp as any).maxHp}`);
+				s1Stats.hpDiedCount++;
+			}
+			if (s1.fullSpurt) {
+				s1Stats.fullSpurtCount++;
+			}
+
+			// Track stats for s2's uma
+			const s2Stats = s2IsUma1 ? this.staminaStats.uma1 : this.staminaStats.uma2;
+			s2Stats.total++;
+			if (s2.hpDied) {
+				console.log(`[StaminaDebug] s2 died! HP: ${(s2.hp as any).hp}, MaxHP: ${(s2.hp as any).maxHp}`);
+				s2Stats.hpDiedCount++;
+			}
+			if (s2.fullSpurt) {
+				s2Stats.fullSpurtCount++;
+			}
+
+			const s1FirstUmaStats = s1IsUma1 ? this.firstUmaStats.uma1 : this.firstUmaStats.uma2;
+			s1FirstUmaStats.total++;
+			if (s1.firstUmaInLateRace) {
+				s1FirstUmaStats.firstPlaceCount++;
+			}
+
 			const s2FirstUmaStats = s2IsUma1 ? this.firstUmaStats.uma1 : this.firstUmaStats.uma2;
 			s2FirstUmaStats.total++;
 			if (s2.firstUmaInLateRace) {
